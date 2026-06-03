@@ -20,6 +20,8 @@ function NavbarShell() {
         scrolled,
         setScrolled,
         cartCount,
+        theme,
+        toggleTheme,
     } = useNavbar();
 
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -105,6 +107,18 @@ function NavbarShell() {
 
                             {/* ── Right icons ── */}
                             <div className="flex items-center gap-0.5 flex-shrink-0 ml-auto">
+                                {/* Theme Toggle */}
+                                <Tooltip content={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"} placement="bottom">
+                                    <button
+                                        id="navbar-theme-toggle"
+                                        onClick={toggleTheme}
+                                        className="inline-flex p-2 rounded-full text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all duration-150"
+                                        aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                                    >
+                                        <ThemeToggleIcon theme={theme} />
+                                    </button>
+                                </Tooltip>
+
                                 {/* Cart */}
                                 <Tooltip content="Shopping cart" placement="bottom">
                                     <Link
@@ -186,5 +200,23 @@ function HamburgerIcon({ open }: { open: boolean }) {
                 open ? "-rotate-45" : "translate-y-1.5"
             }`} />
         </div>
+    );
+}
+
+function ThemeToggleIcon({ theme }: { theme: "light" | "dark" }) {
+    if (theme === "dark") {
+        // Sun icon for dark mode (click to toggle to light)
+        return (
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                <circle cx="12" cy="12" r="4" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41m12.72-12.72l-1.41 1.41" />
+            </svg>
+        );
+    }
+    // Moon icon for light mode (click to toggle to dark)
+    return (
+        <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+        </svg>
     );
 }
