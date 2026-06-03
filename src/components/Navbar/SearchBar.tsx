@@ -46,11 +46,10 @@ export default function SearchBar() {
     return (
         <div ref={containerRef} className="flex-1 min-w-0 hidden md:block">
             <div
-                className={`relative flex items-center rounded-xl transition-all duration-200 ${
-                    searchFocused
-                        ? "bg-neutral-100 dark:bg-neutral-800 ring-2 ring-primary-400/60"
-                        : "bg-neutral-100/70 dark:bg-neutral-800/60 ring-1 ring-neutral-200/60 dark:ring-neutral-700/40 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                }`}
+                className={`relative flex items-center rounded-xl transition-all duration-200 ${searchFocused
+                        ? "bg-neutral-200/90 dark:bg-neutral-800 ring-2 ring-primary-400/60"
+                        : "bg-neutral-200/50 dark:bg-neutral-800/60 ring-1 ring-neutral-300/50 dark:ring-neutral-700/40 hover:bg-neutral-200/80 dark:hover:bg-neutral-800"
+                    }`}
             >
                 <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 flex-shrink-0 pointer-events-none" />
                 <input
@@ -104,11 +103,10 @@ export function SearchSuggestions() {
     return (
         <div
             ref={panelRef}
-            className={`transition-all duration-200 ease-out origin-top ${
-                suggestionsOpen
+            className={`transition-all duration-200 ease-out origin-top ${suggestionsOpen
                     ? "opacity-100 scale-y-100 translate-y-0 pointer-events-auto"
                     : "opacity-0 scale-y-95 -translate-y-1 pointer-events-none"
-            }`}
+                }`}
             aria-hidden={!suggestionsOpen}
         >
             <div className="bg-white/85 dark:bg-neutral-900/85 backdrop-blur-xl rounded-2xl ring-1 ring-neutral-200/80 dark:ring-neutral-700/60 shadow-xl shadow-black/10 dark:shadow-black/40 p-4">

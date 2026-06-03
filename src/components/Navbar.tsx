@@ -93,10 +93,13 @@ function NavbarShell() {
                                     <Tooltip key={link.href} content={`Go to ${link.label}`} placement="bottom">
                                         <Link
                                             href={link.href}
-                                            className="relative px-3 py-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white rounded-lg transition-colors duration-150 group"
+                                            className="relative px-3.5 py-1.5 text-sm font-semibold text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 rounded-xl transition-all duration-200 group"
                                         >
                                             {link.label}
-                                            <span className="absolute bottom-1 left-3 right-3 h-px bg-primary-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left rounded-full" />
+                                            {/* Pill Background expand */}
+                                            <span className="absolute inset-0 bg-neutral-100/80 dark:bg-neutral-800/60 rounded-xl scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-200 -z-10" />
+                                            {/* Centered active brand dot */}
+                                            <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary-500 rounded-full scale-0 group-hover:scale-100 transition-transform duration-200 origin-center" />
                                         </Link>
                                     </Tooltip>
                                 ))}

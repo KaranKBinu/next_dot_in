@@ -37,7 +37,7 @@ export default function MobileMenu() {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search vintage, brands…"
-                        className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl bg-neutral-100/80 dark:bg-neutral-800/80 text-neutral-900 dark:text-white placeholder:text-neutral-400 border border-transparent focus:outline-none focus:ring-2 focus:ring-primary-400/50 transition-all"
+                        className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl bg-neutral-200/50 dark:bg-neutral-800/80 text-neutral-900 dark:text-white placeholder:text-neutral-400 border border-transparent focus:outline-none focus:ring-2 focus:ring-primary-400/50 transition-all"
                     />
                 </div>
 
