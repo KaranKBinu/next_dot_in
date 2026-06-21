@@ -287,24 +287,34 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                         </div>
 
                         {/* Actions */}
-                        <div className="flex gap-4">
-                            <button
-                                onClick={handleClaim}
-                                className={`flex-1 inline-flex items-center justify-center gap-2 py-4 rounded-xl text-sm font-extrabold transition-all active:scale-95 cursor-pointer ${
-                                    inCart
-                                        ? "bg-green-500 hover:bg-green-400 text-white shadow-lg shadow-green-500/25"
-                                        : "bg-primary-500 hover:bg-primary-400 text-white shadow-lg shadow-primary-500/25"
-                                }`}
-                            >
-                                <ShoppingBag className="w-4 h-4 stroke-[2.5]" />
-                                {inCart ? `Reserved (${reservationCode})` : t.cardBtnClaim}
-                            </button>
+                        <div className="space-y-3">
+                            <div className="flex flex-col sm:flex-row gap-4">
+                                <button
+                                    onClick={handleClaim}
+                                    className={`flex-1 inline-flex items-center justify-center gap-2 py-4 rounded-xl text-sm font-extrabold transition-all active:scale-95 cursor-pointer ${
+                                        inCart
+                                            ? "bg-green-500 hover:bg-green-400 text-white shadow-lg shadow-green-500/25"
+                                            : "bg-primary-500 hover:bg-primary-400 text-white shadow-lg shadow-primary-500/25"
+                                    }`}
+                                >
+                                    <ShoppingBag className="w-4 h-4 stroke-[2.5]" />
+                                    {inCart ? `Reserved (${reservationCode})` : t.cardBtnClaim}
+                                </button>
+                                <Link
+                                    href={`/checkout?sku=${selectedVariant.sku}`}
+                                    className="flex-1 inline-flex items-center justify-center gap-2 py-4 bg-neutral-950 hover:bg-neutral-900 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-white text-sm font-extrabold rounded-xl transition-all active:scale-95 cursor-pointer shadow-lg shadow-neutral-900/10"
+                                >
+                                    <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
+                                    Buy Now (Direct)
+                                </Link>
+                            </div>
                             {inCart && (
                                 <Link 
                                     href="/cart"
-                                    className="px-6 py-4 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200 text-sm font-bold rounded-xl transition-colors flex items-center justify-center"
+                                    className="w-full py-3 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5"
                                 >
-                                    View Cart
+                                    <span>You have this reserved in your cart. View Cart</span>
+                                    <ChevronRight className="w-3.5 h-3.5" />
                                 </Link>
                             )}
                         </div>

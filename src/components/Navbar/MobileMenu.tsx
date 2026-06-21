@@ -66,24 +66,31 @@ export default function MobileMenu() {
                                     <p className="text-[10px] text-neutral-400 dark:text-neutral-500">Sign in to access your account</p>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-2 px-1">
+                            <div className="grid grid-cols-3 gap-1.5 px-1">
                                 <button
                                     onClick={() => {
                                         setUser({ name: "Karan Binu", email: "karan@next.in" });
                                         setMenuOpen(false);
                                     }}
-                                    className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold text-neutral-700 dark:text-neutral-200 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 transition-all"
+                                    className="flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-[10px] font-semibold text-neutral-700 dark:text-neutral-200 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 transition-all truncate"
                                 >
                                     <LoginIcon />
-                                    Sign in (Demo)
+                                    Sign In
                                 </button>
                                 <Link
                                     href="/auth/signup"
                                     onClick={() => setMenuOpen(false)}
-                                    className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold text-neutral-700 dark:text-neutral-200 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 transition-all text-center"
+                                    className="flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-[10px] font-semibold text-neutral-700 dark:text-neutral-200 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 transition-all text-center truncate"
                                 >
                                     <UserPlusIcon />
-                                    Sign up
+                                    Sign Up
+                                </Link>
+                                <Link
+                                    href="/admin"
+                                    onClick={() => setMenuOpen(false)}
+                                    className="flex items-center justify-center gap-1.5 py-2 px-1 rounded-xl text-[10px] font-semibold text-neutral-700 dark:text-neutral-200 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 transition-all text-center truncate"
+                                >
+                                    Admin
                                 </Link>
                             </div>
                         </div>
@@ -125,6 +132,17 @@ export default function MobileMenu() {
                             >
                                 <TagIcon />
                                 My Listings
+                            </Link>
+                            <Link
+                                href="/admin"
+                                onClick={() => setMenuOpen(false)}
+                                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100/60 dark:hover:bg-neutral-800/60 transition-colors"
+                            >
+                                <svg className="w-5 h-5 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
+                                </svg>
+                                Admin Console
                             </Link>
                             <button
                                 onClick={() => {

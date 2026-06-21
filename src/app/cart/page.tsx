@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/components/Cart/CartContext";
 import { useNavbar } from "@/components/Navbar/NavbarContext";
 import { TRANSLATIONS, formatINR } from "@/utils/i18n";
@@ -42,6 +43,8 @@ export default function CartPage() {
         reservationCode,
     } = useCart();
 
+    const router = useRouter();
+
     const [isCheckoutSuccess, setIsCheckoutSuccess] = useState(false);
     const [placedReservationCode, setPlacedReservationCode] = useState("");
     const [debugOpen, setDebugOpen] = useState(false);
@@ -75,9 +78,7 @@ export default function CartPage() {
 
     const handleCheckout = () => {
         if (hasOutOfStockItems) return;
-        setPlacedReservationCode(reservationCode);
-        setIsCheckoutSuccess(true);
-        clearCart();
+        router.push("/checkout");
     };
 
     // Clear checkout success screen after 5 seconds
