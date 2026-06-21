@@ -39,9 +39,11 @@ export default function CartPage() {
         setAbandonTimeoutDays,
         timeLeftMs,
         isItemOutOfStock,
+        reservationCode,
     } = useCart();
 
     const [isCheckoutSuccess, setIsCheckoutSuccess] = useState(false);
+    const [placedReservationCode, setPlacedReservationCode] = useState("");
     const [debugOpen, setDebugOpen] = useState(false);
 
     // Calculate subtotal for items that are not out of stock
@@ -73,6 +75,7 @@ export default function CartPage() {
 
     const handleCheckout = () => {
         if (hasOutOfStockItems) return;
+        setPlacedReservationCode(reservationCode);
         setIsCheckoutSuccess(true);
         clearCart();
     };
@@ -125,6 +128,16 @@ export default function CartPage() {
                             <p className="text-sm text-neutral-600 dark:text-neutral-400 max-w-md mx-auto leading-relaxed">
                                 {t.checkoutSuccess}
                             </p>
+                            {placedReservationCode && (
+                                <div className="inline-flex items-center gap-2.5 px-4 py-2.5 bg-white dark:bg-neutral-950 border border-emerald-100 dark:border-emerald-900/50 rounded-2xl shadow-sm mt-3">
+                                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-neutral-450">
+                                        Reservation Code:
+                                    </span>
+                                    <span className="font-mono text-sm font-black text-emerald-600 dark:text-emerald-400 lowercase tracking-wider">
+                                        {placedReservationCode}
+                                    </span>
+                                </div>
+                            )}
                         </div>
                         <div className="pt-2">
                             <Link href="/" className="inline-flex items-center gap-2 px-6 py-3 bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-neutral-800 dark:hover:bg-neutral-700 text-sm font-bold rounded-xl transition-all shadow-md">
@@ -272,6 +285,18 @@ export default function CartPage() {
                                 <h3 className="text-base font-extrabold text-neutral-900 dark:text-white pb-3 border-b border-neutral-200/60 dark:border-neutral-800/60">
                                     Order Summary
                                 </h3>
+
+                                {reservationCode && (
+                                    <div className="flex justify-between items-center text-xs font-bold bg-neutral-100/80 dark:bg-neutral-800/40 p-3 rounded-xl border border-neutral-200/40 dark:border-neutral-800/40">
+                                        <span className="text-neutral-450 uppercase tracking-widest text-[9px] flex items-center gap-1.5 font-extrabold">
+                                            <Sparkles className="w-3 h-3 text-primary-500 animate-pulse" />
+                                            Code:
+                                        </span>
+                                        <span className="font-mono text-primary-600 dark:text-primary-400 lowercase tracking-wider bg-white dark:bg-neutral-950 px-2 py-0.5 rounded border border-neutral-200/30 dark:border-neutral-800/30 shadow-xs">
+                                            {reservationCode}
+                                        </span>
+                                    </div>
+                                )}
 
                                 <div className="space-y-3.5 text-sm font-semibold">
                                     <div className="flex justify-between text-neutral-500 dark:text-neutral-400">

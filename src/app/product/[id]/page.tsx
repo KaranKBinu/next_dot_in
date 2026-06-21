@@ -28,7 +28,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
     const { id: productId } = use(params);
     const { locale } = useNavbar();
     const t = TRANSLATIONS[locale];
-    const { addToCart, cartItems } = useCart();
+    const { addToCart, cartItems, reservationCode } = useCart();
     
     // Accordion states
     const [activeTab, setActiveTab] = useState<"details" | "measurements" | "eco">("details");
@@ -193,7 +193,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                                 }`}
                             >
                                 <ShoppingBag className="w-4 h-4 stroke-[2.5]" />
-                                {inCart ? "Item Reserved (Go to Cart)" : t.cardBtnClaim}
+                                {inCart ? `Reserved (${reservationCode})` : t.cardBtnClaim}
                             </button>
                             {inCart && (
                                 <Link 
