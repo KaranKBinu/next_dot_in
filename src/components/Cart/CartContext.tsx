@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 
 export interface CartItem {
     id: string;
+    productId?: string;
     nameKey: string;
     descKey: string;
     imagePath: string;
@@ -11,6 +12,7 @@ export interface CartItem {
     size: string;
     brand: string;
     colorHex?: string;
+    colorName?: string;
     quantity: number;
 }
 
@@ -186,8 +188,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     const isItemOutOfStock = (id: string) => {
         if (timeLeftMs > 0 || cartItems.length === 0) return false;
-        // If reservation is expired (timeLeftMs === 0), simulate that odd-numbered product IDs are sold
-        return id.endsWith("-1") || id.endsWith("-3") || id.endsWith("-5");
+        // If reservation is expired (timeLeftMs === 0), simulate that odd-numbered parent product IDs are sold
+        const parentId = id.split("-").slice(0, 2).join("-");
+        return parentId.endsWith("-1") || parentId.endsWith("-3") || parentId.endsWith("-5");
     };
 
     const cartCount = cartItems.length;

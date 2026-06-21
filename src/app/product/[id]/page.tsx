@@ -1,11 +1,11 @@
 "use client";
 
-import React, { use, useState, useMemo } from "react";
+import React, { use, useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useCart } from "@/components/Cart/CartContext";
 import { useNavbar } from "@/components/Navbar/NavbarContext";
 import { TRANSLATIONS, formatINR } from "@/utils/i18n";
-import { PRODUCTS, CATEGORIES_META, Product } from "@/utils/catalog";
+import { PRODUCTS, CATEGORIES_META, Product, ProductVariant } from "@/utils/catalog";
 import Typography from "@/components/Typography";
 import { 
     ShoppingBag, 
@@ -38,13 +38,37 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
         return PRODUCTS.find(p => p.id === productId);
     }, [productId]);
 
+    // Active variant state (initialized to first variant of the product)
+    const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
+
+    // Initialize selectedVariant on client once product is resolved
+    useEffect(() => {
+        if (product) {
+            setSelectedVariant(product.variants[0]);
+        }
+    }, [product]);
+
     // Fetch related products (same category, excluding current)
     const relatedProducts = useMemo(() => {
         if (!product) return [];
         return PRODUCTS.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4);
     }, [product]);
 
-    if (!product) {
+    // Calculate unique colors for swatches
+    const colors = useMemo(() => {
+        if (!product) return [];
+        const seen = new Set<string>();
+        const res: { name: string; hex: string }[] = [];
+        product.variants.forEach(v => {
+            if (!seen.has(v.colorName)) {
+                seen.add(v.colorName);
+                res.push({ name: v.colorName, hex: v.colorHex });
+            }
+        });
+        return res;
+    }, [product]);
+
+    if (!product || !selectedVariant) {
         return (
             <main className="flex-1 bg-white dark:bg-neutral-950 py-24 text-center space-y-6">
                 <div className="max-w-md mx-auto space-y-4">
@@ -63,7 +87,22 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
         );
     }
 
-    const inCart = cartItems.some(i => i.id === product.id);
+    const inCart = cartItems.some(i => i.id === selectedVariant.sku);
+
+    const handleClaim = () => {
+        addToCart({
+            id: selectedVariant.sku,
+            productId: product.id,
+            nameKey: product.nameKey,
+            descKey: product.descKey,
+            imagePath: selectedVariant.imagePath,
+            priceInRupees: selectedVariant.priceInRupees,
+            size: selectedVariant.size,
+            brand: product.brand,
+            colorHex: selectedVariant.colorHex,
+            colorName: selectedVariant.colorName,
+        });
+    };
 
     return (
         <main className="flex-1 bg-white dark:bg-neutral-950 pb-24 pt-8">
@@ -95,12 +134,12 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                     <div className="lg:col-span-6 space-y-6">
                         <div 
                             className="relative w-full h-[400px] md:h-[520px] rounded-3xl flex items-center justify-center overflow-hidden border border-neutral-100 dark:border-neutral-900 shadow-lg"
-                            style={{ backgroundColor: `${product.colorHex}0c` }}
+                            style={{ backgroundColor: `${selectedVariant.colorHex}0c` }}
                         >
                             {/* Ambient Glow */}
                             <div 
                                 className="absolute inset-0 opacity-15 blur-[120px] scale-90"
-                                style={{ backgroundColor: product.colorHex }}
+                                style={{ backgroundColor: selectedVariant.colorHex }}
                             />
                             
                             {/* Unique Badging */}
@@ -112,7 +151,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                             </div>
 
                             <img 
-                                src={product.imagePath} 
+                                src={selectedVariant.imagePath} 
                                 alt={t[product.nameKey as keyof typeof t] || product.nameKey}
                                 className="h-72 md:h-96 w-auto object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500 select-none relative z-10"
                                 draggable="false"
@@ -153,14 +192,79 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                             </p>
                         </div>
 
+                        {/* ── Variant Selectors (Color & Size Swatches) ── */}
+                        {product.variants.length > 1 && (
+                            <div className="space-y-5 py-5 border-y border-neutral-100 dark:border-neutral-900 text-left">
+                                {/* Color Swatch Selector */}
+                                <div className="space-y-2.5">
+                                    <span className="text-[10px] font-extrabold text-neutral-400 uppercase tracking-widest block">
+                                        Color: <span className="text-neutral-800 dark:text-neutral-200 lowercase font-black">{selectedVariant.colorName}</span>
+                                    </span>
+                                    <div className="flex flex-wrap gap-3">
+                                        {colors.map((c) => {
+                                            const isActive = selectedVariant.colorName === c.name;
+                                            return (
+                                                <button
+                                                    key={c.name}
+                                                    onClick={() => {
+                                                        // Switch to first variant matching this color
+                                                        const match = product.variants.find(v => v.colorName === c.name);
+                                                        if (match) setSelectedVariant(match);
+                                                    }}
+                                                    className={`w-8 h-8 rounded-full border-2 transition-all relative flex items-center justify-center cursor-pointer active:scale-90 ${
+                                                        isActive 
+                                                            ? "border-primary-500 scale-110 shadow-md ring-2 ring-primary-500/20" 
+                                                            : "border-neutral-200/60 dark:border-neutral-800 hover:scale-105"
+                                                    }`}
+                                                    style={{ backgroundColor: c.hex }}
+                                                    title={c.name}
+                                                >
+                                                    {isActive && (
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-white mix-blend-difference" />
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Size Swatch Selector */}
+                                <div className="space-y-2.5">
+                                    <span className="text-[10px] font-extrabold text-neutral-400 uppercase tracking-widest block">
+                                        Size: <span className="text-neutral-800 dark:text-neutral-200 font-black">{selectedVariant.size}</span>
+                                    </span>
+                                    <div className="flex flex-wrap gap-2.5">
+                                        {product.variants
+                                            .filter(v => v.colorName === selectedVariant.colorName)
+                                            .map((v) => {
+                                                const isActive = selectedVariant.sku === v.sku;
+                                                return (
+                                                    <button
+                                                        key={v.sku}
+                                                        onClick={() => setSelectedVariant(v)}
+                                                        className={`px-4 py-2.5 text-xs font-black rounded-xl border transition-all cursor-pointer active:scale-95 ${
+                                                            isActive
+                                                                ? "bg-primary-500 border-primary-500 text-white shadow-md shadow-primary-500/10"
+                                                                : "bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-700"
+                                                        }`}
+                                                    >
+                                                        {v.size}
+                                                    </button>
+                                                );
+                                            })}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Price Area */}
-                        <div className="py-4 border-y border-neutral-100 dark:border-neutral-900 flex items-end justify-between">
+                        <div className="py-4 border-b border-neutral-100 dark:border-neutral-900 flex items-end justify-between">
                             <div>
                                 <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-0.5">
                                     {t.cardPrice}
                                 </span>
                                 <span className="text-3xl font-black text-neutral-950 dark:text-white tracking-tight">
-                                    {formatINR(product.priceInRupees)}
+                                    {formatINR(selectedVariant.priceInRupees)}
                                 </span>
                             </div>
                             <div className="text-right">
@@ -169,7 +273,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                                 </span>
                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-extrabold bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 rounded-full">
                                     <CheckCircle className="w-3.5 h-3.5" />
-                                    In Stock (1-of-1)
+                                    In Stock (1-of-1 SKU)
                                 </span>
                             </div>
                         </div>
@@ -185,7 +289,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                         {/* Actions */}
                         <div className="flex gap-4">
                             <button
-                                onClick={() => addToCart(product)}
+                                onClick={handleClaim}
                                 className={`flex-1 inline-flex items-center justify-center gap-2 py-4 rounded-xl text-sm font-extrabold transition-all active:scale-95 cursor-pointer ${
                                     inCart
                                         ? "bg-green-500 hover:bg-green-400 text-white shadow-lg shadow-green-500/25"
@@ -235,7 +339,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                                     <div className="space-y-2 text-left">
                                         <div className="grid grid-cols-2 gap-y-2">
                                             <span className="font-bold text-neutral-400">{t.conditionTitle}:</span>
-                                            <span className="font-semibold text-neutral-800 dark:text-neutral-200">{t[product.conditionKey]}</span>
+                                            <span className="font-semibold text-neutral-800 dark:text-neutral-200">{t[selectedVariant.conditionKey]}</span>
                                             
                                             <span className="font-bold text-neutral-400">Material:</span>
                                             <span className="font-semibold text-neutral-800 dark:text-neutral-200">{t[product.materialKey]}</span>
@@ -257,15 +361,15 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                                         <div className="grid grid-cols-3 gap-2 text-center">
                                             <div className="p-2.5 bg-white dark:bg-neutral-950 rounded-xl border border-neutral-100 dark:border-neutral-900">
                                                 <span className="block text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Chest (Pit-to-pit)</span>
-                                                <span className="font-extrabold text-sm text-neutral-850 dark:text-white">{product.measurements.chest}</span>
+                                                <span className="font-extrabold text-sm text-neutral-850 dark:text-white">{selectedVariant.measurements.chest}</span>
                                             </div>
                                             <div className="p-2.5 bg-white dark:bg-neutral-950 rounded-xl border border-neutral-100 dark:border-neutral-900">
                                                 <span className="block text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Length (Shoulder-to-hem)</span>
-                                                <span className="font-extrabold text-sm text-neutral-850 dark:text-white">{product.measurements.length}</span>
+                                                <span className="font-extrabold text-sm text-neutral-850 dark:text-white">{selectedVariant.measurements.length}</span>
                                             </div>
                                             <div className="p-2.5 bg-white dark:bg-neutral-950 rounded-xl border border-neutral-100 dark:border-neutral-900">
                                                 <span className="block text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Shoulder width</span>
-                                                <span className="font-extrabold text-sm text-neutral-850 dark:text-white">{product.measurements.shoulder}</span>
+                                                <span className="font-extrabold text-sm text-neutral-850 dark:text-white">{selectedVariant.measurements.shoulder}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -306,7 +410,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                         </Typography>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
                             {relatedProducts.map((p) => {
-                                const relInCart = cartItems.some(i => i.id === p.id);
+                                const relInCart = cartItems.some(i => i.id === p.sku);
                                 return (
                                     <article
                                         key={p.id}
@@ -337,7 +441,18 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                                                     {formatINR(p.priceInRupees)}
                                                 </p>
                                                 <button
-                                                    onClick={() => addToCart(p)}
+                                                    onClick={() => addToCart({
+                                                        id: p.sku,
+                                                        productId: p.id,
+                                                        nameKey: p.nameKey,
+                                                        descKey: p.descKey,
+                                                        imagePath: p.imagePath,
+                                                        priceInRupees: p.priceInRupees,
+                                                        size: p.size,
+                                                        brand: p.brand,
+                                                        colorHex: p.colorHex,
+                                                        colorName: p.colorName,
+                                                    })}
                                                     className={`flex items-center justify-center p-2 rounded-xl transition-all active:scale-90 ${
                                                         relInCart
                                                             ? "bg-green-500 text-white"

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCart } from "@/components/Cart/CartContext";
 import { useNavbar } from "@/components/Navbar/NavbarContext";
 import { TRANSLATIONS, formatINR } from "@/utils/i18n";
-import { PRODUCTS, CATEGORIES_META, Product } from "@/utils/catalog";
+import { PRODUCTS, CATEGORIES_META, Product, ProductVariant } from "@/utils/catalog";
 import Typography from "@/components/Typography";
 import { 
     Search, 
@@ -13,9 +13,9 @@ import {
     ArrowUpDown, 
     ShoppingBag, 
     ChevronRight,
-    Star, 
     Flame,
-    X
+    X,
+    Sparkles
 } from "lucide-react";
 
 interface CategoryPageProps {
@@ -31,23 +31,33 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     // Filters state
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+    const [selectedColors, setSelectedColors] = useState<string[]>([]);
     const [selectedPriceRange, setSelectedPriceRange] = useState<string>("all");
     const [sortBy, setSortBy] = useState<string>("hotness");
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-    // Dynamic lists of unique sizes from catalog
+    // Dynamic list of unique sizes from all variants in catalog
     const allSizes = useMemo(() => {
         const sizes = new Set<string>();
-        PRODUCTS.forEach(p => sizes.add(p.size));
+        PRODUCTS.forEach(p => p.variants.forEach(v => sizes.add(v.size)));
         return Array.from(sizes).sort();
     }, []);
 
+    // Dynamic list of unique colors from all variants in catalog
+    const allColors = useMemo(() => {
+        const colorsMap = new Map<string, string>(); // colorName -> colorHex
+        PRODUCTS.forEach(p => p.variants.forEach(v => colorsMap.set(v.colorName, v.colorHex)));
+        return Array.from(colorsMap.entries()).map(([name, hex]) => ({ name, hex }));
+    }, []);
+
     // Filter & Sort logic
-    const filteredProducts = useMemo(() => {
-        return PRODUCTS.filter((product) => {
+    const filteredProductsWithVariants = useMemo(() => {
+        const list: { product: Product; variant: ProductVariant }[] = [];
+
+        PRODUCTS.forEach((product) => {
             // Category check
             if (categorySlug !== "all" && product.category !== categorySlug) {
-                return false;
+                return;
             }
 
             // Search query check
@@ -56,35 +66,51 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                 const name = (t[product.nameKey as keyof typeof t] || product.nameKey).toLowerCase();
                 const brand = product.brand.toLowerCase();
                 if (!name.includes(query) && !brand.includes(query)) {
-                    return false;
+                    return;
                 }
             }
 
-            // Size check
-            if (selectedSizes.length > 0 && !selectedSizes.includes(product.size)) {
-                return false;
-            }
+            // Check if any variants match filters
+            const matchingVariants = product.variants.filter((variant) => {
+                // Size filter
+                if (selectedSizes.length > 0 && !selectedSizes.includes(variant.size)) {
+                    return false;
+                }
 
-            // Price check
-            if (selectedPriceRange !== "all") {
-                const price = product.priceInRupees;
-                if (selectedPriceRange === "under3500" && price >= 3500) return false;
-                if (selectedPriceRange === "3500to5000" && (price < 3500 || price > 5000)) return false;
-                if (selectedPriceRange === "over5000" && price <= 5000) return false;
-            }
+                // Color filter
+                if (selectedColors.length > 0 && !selectedColors.includes(variant.colorName)) {
+                    return false;
+                }
 
-            return true;
-        }).sort((a, b) => {
+                // Price filter
+                if (selectedPriceRange !== "all") {
+                    const price = variant.priceInRupees;
+                    if (selectedPriceRange === "under3500" && price >= 3500) return false;
+                    if (selectedPriceRange === "3500to5000" && (price < 3500 || price > 5000)) return false;
+                    if (selectedPriceRange === "over5000" && price <= 5000) return false;
+                }
+
+                return true;
+            });
+
+            // If variants match, display the product using the first matching variant
+            if (matchingVariants.length > 0) {
+                list.push({ product, variant: matchingVariants[0] });
+            }
+        });
+
+        // Sort items
+        return list.sort((a, b) => {
             if (sortBy === "priceAsc") {
-                return a.priceInRupees - b.priceInRupees;
+                return a.variant.priceInRupees - b.variant.priceInRupees;
             }
             if (sortBy === "priceDesc") {
-                return b.priceInRupees - a.priceInRupees;
+                return b.variant.priceInRupees - a.variant.priceInRupees;
             }
-            // default: hotness (highest demand first)
-            return b.hotness - a.hotness;
+            // default: hotness
+            return b.variant.hotness - a.variant.hotness;
         });
-    }, [categorySlug, searchQuery, selectedSizes, selectedPriceRange, sortBy, locale]);
+    }, [categorySlug, searchQuery, selectedSizes, selectedColors, selectedPriceRange, sortBy, locale]);
 
     const handleSizeToggle = (size: string) => {
         setSelectedSizes(prev => 
@@ -92,9 +118,16 @@ export default function CategoryPage({ params }: CategoryPageProps) {
         );
     };
 
+    const handleColorToggle = (colorName: string) => {
+        setSelectedColors(prev =>
+            prev.includes(colorName) ? prev.filter(c => c !== colorName) : [...prev, colorName]
+        );
+    };
+
     const clearAllFilters = () => {
         setSearchQuery("");
         setSelectedSizes([]);
+        setSelectedColors([]);
         setSelectedPriceRange("all");
         setSortBy("hotness");
     };
@@ -245,13 +278,42 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                                         <button
                                             key={size}
                                             onClick={() => handleSizeToggle(size)}
-                                            className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${
+                                            className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
                                                 selected
                                                     ? "bg-primary-500 border-primary-500 text-white"
                                                     : "bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-700"
                                             }`}
                                         >
                                             {size}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Color filter */}
+                        <div className="space-y-3">
+                            <h3 className="text-xs font-extrabold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
+                                Colors
+                            </h3>
+                            <div className="flex flex-wrap gap-2.5">
+                                {allColors.map((color) => {
+                                    const selected = selectedColors.includes(color.name);
+                                    return (
+                                        <button
+                                            key={color.name}
+                                            onClick={() => handleColorToggle(color.name)}
+                                            className={`w-7 h-7 rounded-full border transition-all relative flex items-center justify-center cursor-pointer ${
+                                                selected
+                                                    ? "border-primary-500 scale-110 ring-2 ring-primary-500/20"
+                                                    : "border-neutral-200 dark:border-neutral-800 hover:scale-105"
+                                            }`}
+                                            style={{ backgroundColor: color.hex }}
+                                            title={color.name}
+                                        >
+                                            {selected && (
+                                                <span className="w-1.5 h-1.5 rounded-full bg-white mix-blend-difference" />
+                                            )}
                                         </button>
                                     );
                                 })}
@@ -286,10 +348,10 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                         </div>
 
                         {/* Reset Filters button */}
-                        {(selectedSizes.length > 0 || selectedPriceRange !== "all" || searchQuery !== "") && (
+                        {(selectedSizes.length > 0 || selectedColors.length > 0 || selectedPriceRange !== "all" || searchQuery !== "") && (
                             <button
                                 onClick={clearAllFilters}
-                                className="w-full text-center py-2.5 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-800 text-xs font-bold text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900/30 transition-all"
+                                className="w-full text-center py-2.5 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-800 text-xs font-bold text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900/30 transition-all cursor-pointer"
                             >
                                 Clear All Filters
                             </button>
@@ -298,7 +360,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
 
                     {/* ── Products Display Grid (3 cols) ── */}
                     <div className="lg:col-span-3">
-                        {filteredProducts.length === 0 ? (
+                        {filteredProductsWithVariants.length === 0 ? (
                             <div className="py-20 text-center space-y-4 max-w-md mx-auto border border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl bg-neutral-50/50 dark:bg-neutral-900/10">
                                 <SlidersHorizontal className="w-10 h-10 text-neutral-400 mx-auto" />
                                 <div className="space-y-1">
@@ -306,23 +368,23 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                                         No vintage pieces found
                                     </h3>
                                     <p className="text-xs text-neutral-500 dark:text-neutral-500">
-                                        Try adjusting your keywords, sizing selection, or price filters.
+                                        Try adjusting your keywords, sizing, color selection, or price filters.
                                     </p>
                                 </div>
                                 <button
                                     onClick={clearAllFilters}
-                                    className="px-5 py-2.5 bg-neutral-900 text-white dark:bg-neutral-800 text-xs font-bold rounded-xl hover:bg-neutral-800"
+                                    className="px-5 py-2.5 bg-neutral-900 text-white dark:bg-neutral-800 text-xs font-bold rounded-xl hover:bg-neutral-800 cursor-pointer"
                                 >
                                     Reset Filters
                                 </button>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                                {filteredProducts.map((product) => {
-                                    const inCart = cartItems.some(i => i.id === product.id);
+                                {filteredProductsWithVariants.map(({ product, variant }) => {
+                                    const inCart = cartItems.some(i => i.id === variant.sku);
                                     return (
                                         <article
-                                            key={product.id}
+                                            key={variant.sku}
                                             className="group relative flex flex-col rounded-2xl bg-white dark:bg-neutral-900 ring-1 ring-neutral-200/60 dark:ring-neutral-800/60 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden text-left"
                                         >
                                             {/* Category/Rank tag */}
@@ -336,15 +398,15 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                                             <Link
                                                 href={`/product/${product.id}`}
                                                 className="relative h-56 flex items-center justify-center overflow-hidden cursor-pointer"
-                                                style={{ background: `${product.colorHex}0c` }}
+                                                style={{ background: `${variant.colorHex}0c` }}
                                             >
                                                 {/* Color glow */}
                                                 <div
                                                     className="absolute inset-0 opacity-10 blur-xl scale-75 transition-opacity duration-500 group-hover:opacity-20"
-                                                    style={{ backgroundColor: product.colorHex }}
+                                                    style={{ backgroundColor: variant.colorHex }}
                                                 />
                                                 <img
-                                                    src={product.imagePath}
+                                                    src={variant.imagePath}
                                                     alt={t[product.nameKey as keyof typeof t] || product.nameKey}
                                                     draggable="false"
                                                     className="relative z-10 h-40 w-auto object-contain drop-shadow-xl group-hover:scale-105 transition-transform duration-500 select-none"
@@ -355,7 +417,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                                             <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
                                                 <div className="space-y-2">
                                                     <div className="flex items-center justify-between">
-                                                        <HotnessStars score={product.hotness} />
+                                                        <HotnessStars score={variant.hotness} />
                                                         <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
                                                             {product.brand}
                                                         </span>
@@ -373,22 +435,36 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                                                 </div>
 
                                                 <div className="space-y-3 pt-3 border-t border-neutral-100 dark:border-neutral-800">
-                                                    {/* Size badge */}
-                                                    <div className="flex">
+                                                    {/* Size & color badges */}
+                                                    <div className="flex flex-wrap items-center gap-1.5">
                                                         <span className="px-2 py-0.5 text-[9px] font-bold rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
-                                                            {t.cardSize}: {product.size}
+                                                            {t.cardSize}: {variant.size}
+                                                        </span>
+                                                        <span className="px-2 py-0.5 text-[9px] font-bold rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 lowercase">
+                                                            {variant.colorName}
                                                         </span>
                                                     </div>
 
                                                     {/* Price + Add to cart */}
                                                     <div className="flex items-center justify-between">
                                                         <p className="text-base font-black text-neutral-950 dark:text-white tracking-tight">
-                                                            {formatINR(product.priceInRupees)}
+                                                            {formatINR(variant.priceInRupees)}
                                                         </p>
                                                         
                                                         <button
-                                                            onClick={() => addToCart(product)}
-                                                            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all active:scale-95 ${
+                                                            onClick={() => addToCart({
+                                                                id: variant.sku,
+                                                                productId: product.id,
+                                                                nameKey: product.nameKey,
+                                                                descKey: product.descKey,
+                                                                imagePath: variant.imagePath,
+                                                                priceInRupees: variant.priceInRupees,
+                                                                size: variant.size,
+                                                                brand: product.brand,
+                                                                colorHex: variant.colorHex,
+                                                                colorName: variant.colorName,
+                                                            })}
+                                                            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all active:scale-95 cursor-pointer ${
                                                                 inCart
                                                                     ? "bg-green-500 text-white shadow-md shadow-green-500/20"
                                                                     : "bg-primary-500 hover:bg-primary-400 text-white shadow-md shadow-primary-500/20"
@@ -423,7 +499,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                                     </h2>
                                     <button 
                                         onClick={() => setMobileFiltersOpen(false)}
-                                        className="p-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-900 text-neutral-500 hover:text-neutral-800"
+                                        className="p-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-900 text-neutral-500 hover:text-neutral-800 cursor-pointer"
                                     >
                                         <X className="w-4.5 h-4.5" />
                                     </button>
@@ -466,7 +542,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                                                 <button
                                                     key={size}
                                                     onClick={() => handleSizeToggle(size)}
-                                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${
+                                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
                                                         selected
                                                             ? "bg-primary-500 border-primary-500 text-white"
                                                             : "bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-850 text-neutral-700 dark:text-neutral-350"
@@ -479,12 +555,41 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                                     </div>
                                 </div>
 
+                                {/* Colors */}
+                                <div className="space-y-3">
+                                    <h3 className="text-xs font-extrabold uppercase tracking-widest text-neutral-400">
+                                        Colors
+                                    </h3>
+                                    <div className="flex flex-wrap gap-2.5">
+                                        {allColors.map((color) => {
+                                            const selected = selectedColors.includes(color.name);
+                                            return (
+                                                <button
+                                                    key={color.name}
+                                                    onClick={() => handleColorToggle(color.name)}
+                                                    className={`w-7 h-7 rounded-full border transition-all relative flex items-center justify-center cursor-pointer ${
+                                                        selected
+                                                            ? "border-primary-500 scale-110 ring-2 ring-primary-500/20"
+                                                            : "border-neutral-200 dark:border-neutral-850 hover:scale-105"
+                                                    }`}
+                                                    style={{ backgroundColor: color.hex }}
+                                                    title={color.name}
+                                                >
+                                                    {selected && (
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-white mix-blend-difference" />
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
                                 {/* Price Ranges */}
                                 <div className="space-y-3">
                                     <h3 className="text-xs font-extrabold uppercase tracking-widest text-neutral-400">
                                         {t.filterPrice}
                                     </h3>
-                                    <div className="space-y-2 text-xs font-bold text-neutral-600 dark:text-neutral-400">
+                                    <div className="space-y-2 text-xs font-bold text-neutral-600 dark:text-neutral-450">
                                         {[
                                             { label: "All Prices", value: "all" },
                                             { label: "Under ₹3,500", value: "under3500" },
@@ -511,7 +616,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                             <div className="pt-6 border-t border-neutral-100 dark:border-neutral-900 mt-6 space-y-2.5">
                                 <button
                                     onClick={() => setMobileFiltersOpen(false)}
-                                    className="w-full text-center py-3 bg-primary-500 text-white text-xs font-bold rounded-xl"
+                                    className="w-full text-center py-3 bg-primary-500 text-white text-xs font-bold rounded-xl cursor-pointer"
                                 >
                                     Apply Filters
                                 </button>
@@ -520,7 +625,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                                         clearAllFilters();
                                         setMobileFiltersOpen(false);
                                     }}
-                                    className="w-full text-center py-3 border border-neutral-200 dark:border-neutral-800 text-xs font-bold rounded-xl text-neutral-500"
+                                    className="w-full text-center py-3 border border-neutral-200 dark:border-neutral-800 text-xs font-bold rounded-xl text-neutral-500 cursor-pointer"
                                 >
                                     Clear All
                                 </button>

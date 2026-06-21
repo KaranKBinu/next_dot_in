@@ -236,11 +236,18 @@ export default function CartPage() {
                                                 )}
                                             </div>
 
-                                            {/* Size badge & price */}
+                                            {/* Size & color badges & price */}
                                             <div className="flex items-center justify-between pt-2 border-t border-neutral-100 dark:border-neutral-800/60">
-                                                <span className="px-2 py-0.5 text-[10px] font-bold text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800/80 rounded-md">
-                                                    {t.cardSize}: {item.size}
-                                                </span>
+                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                    <span className="px-2 py-0.5 text-[10px] font-bold text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800/80 rounded-md">
+                                                        {t.cardSize}: {item.size}
+                                                    </span>
+                                                    {item.colorName && (
+                                                        <span className="px-2 py-0.5 text-[10px] font-bold text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800/80 rounded-md lowercase">
+                                                            {item.colorName}
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <p className={`text-lg font-black tracking-tight ${
                                                     outOfStock ? "text-neutral-400 dark:text-neutral-600" : "text-neutral-950 dark:text-white"
                                                 }`}>
