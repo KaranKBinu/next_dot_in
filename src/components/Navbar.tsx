@@ -4,14 +4,42 @@ import React, { useEffect, useRef } from "react";
 import Link from "next/link";
 import Tooltip from "@/components/Tooltip";
 import { NavbarProvider, useNavbar } from "./Navbar/NavbarContext";
+import { useCart } from "@/components/Cart/CartContext";
 import SearchBar, { SearchSuggestions } from "./Navbar/SearchBar";
 import ProfileDropdown from "./Navbar/ProfileDropdown";
 import MobileMenu from "./Navbar/MobileMenu";
 
+import { TRANSLATIONS, Locale } from "@/utils/i18n";
+
 const NAV_LINKS = [
-    { label: "Home", href: "/" },
-    { label: "About", href: "/about" },
+    { key: "navHome" as const, href: "/" },
+    { key: "browseCategories" as const, href: "/catalog/all" },
+    { key: "navAbout" as const, href: "/about" },
 ];
+
+const NEXT_LOCALE: Record<Locale, Locale> = {
+    en: "hi",
+    hi: "ml",
+    ml: "en",
+};
+
+const LANG_LABELS: Record<Locale, string> = {
+    en: "EN",
+    hi: "HI",
+    ml: "ML",
+};
+
+const LANG_TOOLTIPS: Record<Locale, string> = {
+    en: "Switch to Hindi (हिंदी)",
+    hi: "Switch to Malayalam (മലയാളം)",
+    ml: "Switch to English",
+};
+
+const getGoToLabel = (loc: Locale, label: string) => {
+    if (loc === "hi") return `${label} पर जाएं`;
+    if (loc === "ml") return `${label} സന്ദർശിക്കുക`;
+    return `Go to ${label}`;
+};
 
 function NavbarShell() {
     const {
@@ -19,10 +47,12 @@ function NavbarShell() {
         setMenuOpen,
         scrolled,
         setScrolled,
-        cartCount,
         theme,
         toggleTheme,
+        locale,
+        setLocale,
     } = useNavbar();
+    const { cartCount } = useCart();
 
     const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -89,20 +119,23 @@ function NavbarShell() {
 
                             {/* Nav links */}
                             <nav className="hidden md:flex items-center gap-0.5 flex-shrink-0" aria-label="Main navigation">
-                                {NAV_LINKS.map((link) => (
-                                    <Tooltip key={link.href} content={`Go to ${link.label}`} placement="bottom">
-                                        <Link
-                                            href={link.href}
-                                            className="relative px-3.5 py-1.5 text-sm font-semibold text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 rounded-xl transition-all duration-200 group"
-                                        >
-                                            {link.label}
-                                            {/* Pill Background expand */}
-                                            <span className="absolute inset-0 bg-neutral-100/80 dark:bg-neutral-800/60 rounded-xl scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-200 -z-10" />
-                                            {/* Centered active brand dot */}
-                                            <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary-500 rounded-full scale-0 group-hover:scale-100 transition-transform duration-200 origin-center" />
-                                        </Link>
-                                    </Tooltip>
-                                ))}
+                                {NAV_LINKS.map((link) => {
+                                    const label = TRANSLATIONS[locale][link.key];
+                                    return (
+                                        <Tooltip key={link.href} content={getGoToLabel(locale, label)} placement="bottom">
+                                            <Link
+                                                href={link.href}
+                                                className="relative px-3.5 py-1.5 text-sm font-semibold text-neutral-600 dark:text-neutral-400 hover:text-primary-600 dark:hover:text-primary-400 rounded-xl transition-all duration-200 group"
+                                            >
+                                                {label}
+                                                {/* Pill Background expand */}
+                                                <span className="absolute inset-0 bg-neutral-100/80 dark:bg-neutral-800/60 rounded-xl scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-200 -z-10" />
+                                                {/* Centered active brand dot */}
+                                                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary-500 rounded-full scale-0 group-hover:scale-100 transition-transform duration-200 origin-center" />
+                                            </Link>
+                                        </Tooltip>
+                                    );
+                                })}
                             </nav>
 
                             {/* ── Inline search bar (fills remaining space) ── */}
@@ -110,6 +143,18 @@ function NavbarShell() {
 
                             {/* ── Right icons ── */}
                             <div className="flex items-center gap-0.5 flex-shrink-0 ml-auto">
+                                {/* Language Toggle */}
+                                <Tooltip content={LANG_TOOLTIPS[locale]} placement="bottom">
+                                    <button
+                                        id="navbar-lang-toggle"
+                                        onClick={() => setLocale(NEXT_LOCALE[locale])}
+                                        className="inline-flex items-center justify-center w-9 h-9 text-xs font-black tracking-wider text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-all duration-150"
+                                        aria-label={LANG_TOOLTIPS[locale]}
+                                    >
+                                        {LANG_LABELS[locale]}
+                                    </button>
+                                </Tooltip>
+
                                 {/* Theme Toggle */}
                                 <Tooltip content={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"} placement="bottom">
                                     <button
@@ -123,12 +168,12 @@ function NavbarShell() {
                                 </Tooltip>
 
                                 {/* Cart */}
-                                <Tooltip content="Shopping cart" placement="bottom">
+                                <Tooltip content={TRANSLATIONS[locale].cartTooltip} placement="bottom">
                                     <Link
                                         id="navbar-cart-btn"
                                         href="/cart"
                                         className="relative inline-flex p-2 rounded-full text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all duration-150"
-                                        aria-label="Shopping cart"
+                                        aria-label={TRANSLATIONS[locale].cartTooltip}
                                     >
                                         <CartIcon />
                                         {cartCount > 0 && (
@@ -171,11 +216,7 @@ function NavbarShell() {
 }
 
 export default function Navbar() {
-    return (
-        <NavbarProvider>
-            <NavbarShell />
-        </NavbarProvider>
-    );
+    return <NavbarShell />;
 }
 
 /* ── Icons ── */

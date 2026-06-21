@@ -12,6 +12,8 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-devanagari-var: var(--font-devanagari);
+  --font-malayalam-var: var(--font-malayalam);
 
   /* Primary Accent Theme (Shiny Blue) */
   --color-primary-50: #f0f6ff;
@@ -77,6 +79,21 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-weight: 750;
   letter-spacing: -0.02em;
+}
+
+/* ── Locale-aware typography ────────────────────────────────────────────────
+   Switch the primary font stack when the user picks Hindi or Malayalam.
+   data-locale is set synchronously on <html> by NavbarContext on locale change.
+── */
+
+/* Hindi — Devanagari script via Noto Sans Devanagari */
+[data-locale="hi"] body {
+  font-family: var(--font-devanagari), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Malayalam script via Noto Sans Malayalam */
+[data-locale="ml"] body {
+  font-family: var(--font-malayalam), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* Ensure inputs, buttons, and form items look crisp and robust */

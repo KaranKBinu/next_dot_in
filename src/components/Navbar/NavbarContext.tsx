@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { Locale } from "@/utils/i18n";
 
 export interface User {
     name: string;
@@ -17,13 +18,14 @@ interface NavbarContextType {
     setSearchFocused: React.Dispatch<React.SetStateAction<boolean>>;
     searchQuery: string;
     setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
-    cartCount: number;
     userDropOpen: boolean;
     setUserDropOpen: React.Dispatch<React.SetStateAction<boolean>>;
     user: User | null;
     setUser: React.Dispatch<React.SetStateAction<User | null>>;
     theme: "light" | "dark";
     toggleTheme: () => void;
+    locale: Locale;
+    setLocale: (locale: Locale) => void;
 }
 
 const NavbarContext = createContext<NavbarContextType | undefined>(undefined);
@@ -33,10 +35,10 @@ export function NavbarProvider({ children }: { children: React.ReactNode }) {
     const [scrolled, setScrolled] = useState(false);
     const [searchFocused, setSearchFocused] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-    const [cartCount] = useState(3);
     const [userDropOpen, setUserDropOpen] = useState(false);
     const [user, setUser] = useState<User | null>(null);
     const [theme, setTheme] = useState<"light" | "dark">("light");
+    const [locale, setLocaleState] = useState<Locale>("en");
 
     useEffect(() => {
         // Retrieve stored theme, default to light
@@ -52,6 +54,18 @@ export function NavbarProvider({ children }: { children: React.ReactNode }) {
             setTheme("light");
             document.documentElement.classList.remove("dark");
         }
+
+        // Retrieve stored locale and apply it to the document
+        const storedLocale = localStorage.getItem("locale") as Locale | null;
+        if (storedLocale === "en" || storedLocale === "hi" || storedLocale === "ml") {
+            setLocaleState(storedLocale);
+            document.documentElement.dataset.locale = storedLocale;
+            document.documentElement.lang =
+                storedLocale === "hi" ? "hi" : storedLocale === "ml" ? "ml" : "en";
+        } else {
+            // Default: ensure data-locale is set even for first-time visitors
+            document.documentElement.dataset.locale = "en";
+        }
     }, []);
 
     const toggleTheme = () => {
@@ -65,6 +79,15 @@ export function NavbarProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const setLocale = (newLocale: Locale) => {
+        setLocaleState(newLocale);
+        localStorage.setItem("locale", newLocale);
+        // Sync the HTML element so CSS font-family rules take effect immediately
+        document.documentElement.dataset.locale = newLocale;
+        document.documentElement.lang =
+            newLocale === "hi" ? "hi" : newLocale === "ml" ? "ml" : "en";
+    };
+
     return (
         <NavbarContext.Provider
             value={{
@@ -76,13 +99,14 @@ export function NavbarProvider({ children }: { children: React.ReactNode }) {
                 setSearchFocused,
                 searchQuery,
                 setSearchQuery,
-                cartCount,
                 userDropOpen,
                 setUserDropOpen,
                 user,
                 setUser,
                 theme,
                 toggleTheme,
+                locale,
+                setLocale,
             }}
         >
             {children}

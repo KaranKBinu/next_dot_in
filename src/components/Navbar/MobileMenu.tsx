@@ -6,6 +6,7 @@ import { useNavbar } from "./NavbarContext";
 
 const NAV_LINKS = [
     { label: "Home", href: "/" },
+    { label: "Browse Catalog", href: "/catalog/all" },
     { label: "About", href: "/about" },
 ];
 
