@@ -13,7 +13,7 @@ export async function GET() {
       },
     });
 
-    const mappedOrders = orders.map((order) => ({
+    const mappedOrders = orders.map((order: any) => ({
       id: order.id,
       date: order.date.getTime(),
       total: order.total,
