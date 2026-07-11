@@ -21,6 +21,7 @@ import {
     ShieldCheck,
     Check
 } from "lucide-react";
+import { useRazorpay } from "react-razorpay";
 
 // Adjectives, Colors, and Nouns lists for dynamic reservation code generation
 const ADJECTIVES = ["cool", "retro", "sweet", "happy", "fuzzy", "cozy", "bright", "golden", "funky", "classic", "vintage", "wild", "gentle", "fancy", "smart"];
@@ -64,34 +65,17 @@ function CheckoutContent() {
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     // Payment inputs
-    const [utr, setUtr] = useState("");
-    const [paymentError, setPaymentError] = useState("");
     const [isVerifying, setIsVerifying] = useState(false);
+    const { Razorpay } = useRazorpay();
 
     // Final order states
     const [generatedCode, setGeneratedCode] = useState("");
     
-    // Custom QR configuration loaded from localStorage
-    const [qrImage, setQrImage] = useState("/qr_code.jpg");
-    const [upiId, setUpiId] = useState("bothzmannhypo123@okicici");
+
 
     const [dbProducts, setDbProducts] = useState<any[]>([]);
 
     useEffect(() => {
-        const loadQRConfig = async () => {
-            try {
-                const res = await fetch("/api/qr-config");
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.qrCode) setQrImage(data.qrCode);
-                    if (data.upiId) setUpiId(data.upiId);
-                }
-            } catch (err) {
-                console.error("Failed to load QR config from API, using default fallbacks:", err);
-            }
-        };
-        loadQRConfig();
-
         if (directBuySku) {
             fetch("/api/products")
                 .then((r) => r.json())
@@ -157,7 +141,7 @@ function CheckoutContent() {
     }
 
     // Billing Form validation
-    const handleNextStep = (e: React.FormEvent) => {
+    const handleNextStep = async (e: React.FormEvent) => {
         e.preventDefault();
         const newErrors: Record<string, string> = {};
 
@@ -180,66 +164,77 @@ function CheckoutContent() {
         }
 
         setErrors({});
-        setStep("payment");
-    };
-
-    // Payment validation and Order submission
-    const handleVerifyPayment = (e: React.FormEvent) => {
-        e.preventDefault();
-        setPaymentError("");
-
-        const cleanedUtr = utr.trim();
-        if (!cleanedUtr) {
-            setPaymentError("UPI Transaction Ref (UTR) Number is required");
-            return;
-        }
-        if (!/^\d{12}$/.test(cleanedUtr)) {
-            setPaymentError("UTR number must be exactly 12 numeric digits");
-            return;
-        }
-
         setIsVerifying(true);
 
         const code = directBuySku ? generateReservationCode() : (cartResCode || generateReservationCode());
         const orderId = `ORD-${Date.now().toString().slice(-6)}`;
 
-        fetch("/api/orders", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                id: orderId,
-                name,
-                phone,
-                address,
-                pincode,
-                total,
-                utr: cleanedUtr,
-                reservationCode: code,
-                directBuy: !!directBuySku,
-                items: checkoutItems
-            })
-        })
-        .then(async (res) => {
+        try {
+            const res = await fetch("/api/orders", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: orderId,
+                    name,
+                    phone,
+                    address,
+                    pincode,
+                    total,
+                    reservationCode: code,
+                    directBuy: !!directBuySku,
+                    items: checkoutItems
+                })
+            });
             const data = await res.json();
-            if (!res.ok) {
+            if (!res.ok || !data.success) {
                 throw new Error(data.error || "Failed to create order");
             }
             
-            setGeneratedCode(code);
-            if (!directBuySku) {
-                clearCart();
-            }
-            setStep("success");
-        })
-        .catch(err => {
+            const options: any = {
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "",
+                amount: total * 100,
+                currency: "INR",
+                name: "next.in",
+                description: "Vintage Clothing",
+                order_id: data.razorpayOrderId,
+                handler: async (response: any) => {
+                    const verifyRes = await fetch("/api/verify-payment", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_signature: response.razorpay_signature,
+                            dbOrderId: data.orderId
+                        })
+                    });
+                    if (verifyRes.ok) {
+                        setGeneratedCode(code);
+                        if (!directBuySku) clearCart();
+                        setStep("success");
+                    } else {
+                        alert("Payment verification failed.");
+                    }
+                },
+                prefill: {
+                    name,
+                    contact: phone,
+                },
+                theme: {
+                    color: "#000000",
+                }
+            };
+            const rzp1 = new Razorpay(options);
+            rzp1.on("payment.failed", function (response: any) {
+                alert(response.error.description);
+            });
+            rzp1.open();
+        } catch (err: any) {
             console.error("Failed to post order to database API:", err);
-            setPaymentError(err.message || "Failed to process order.");
-        })
-        .finally(() => {
+            alert(err.message || "Failed to process order.");
+        } finally {
             setIsVerifying(false);
-        });
+        }
     };
 
     return (
@@ -398,9 +393,10 @@ function CheckoutContent() {
 
                             <button
                                 type="submit"
-                                className="w-full inline-flex items-center justify-center gap-2 py-4 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 active:scale-95 text-white text-sm font-extrabold rounded-xl transition-all shadow-lg shadow-primary-500/20 cursor-pointer"
+                                disabled={isVerifying}
+                                className="w-full inline-flex items-center justify-center gap-2 py-4 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 active:scale-95 text-white text-sm font-extrabold rounded-xl transition-all shadow-lg shadow-primary-500/20 cursor-pointer disabled:opacity-50"
                             >
-                                Continue to Payment
+                                {isVerifying ? "Processing..." : "Proceed to Pay"}
                                 <ArrowRight className="w-4 h-4" />
                             </button>
                         </form>
@@ -456,132 +452,6 @@ function CheckoutContent() {
                     </div>
                 )}
 
-                {/* ── STEP 2: PAYMENT (UPI QR CODE) ── */}
-                {step === "payment" && (
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-                        {/* QR Code payment form */}
-                        <form onSubmit={handleVerifyPayment} className="md:col-span-7 bg-neutral-50 dark:bg-neutral-900/30 border border-neutral-100 dark:border-neutral-900 rounded-3xl p-6 md:p-8 space-y-6 text-left shadow-sm">
-                            <div className="flex items-center gap-2 pb-4 border-b border-neutral-250/30 dark:border-neutral-800/40">
-                                <button
-                                    type="button"
-                                    onClick={() => setStep("billing")}
-                                    className="p-1.5 rounded-lg bg-white dark:bg-neutral-950 border border-neutral-250/40 dark:border-neutral-800/45 text-neutral-550 hover:text-neutral-850 hover:bg-neutral-100 transition-colors"
-                                >
-                                    <ArrowLeft className="w-4 h-4" />
-                                </button>
-                                <div className="space-y-0.5">
-                                    <h2 className="text-lg font-black text-neutral-900 dark:text-white leading-none">
-                                        Scan & Pay
-                                    </h2>
-                                    <p className="text-[10px] text-neutral-400">
-                                        Scan the UPI QR code below and enter UTR.
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Scan Box Container */}
-                            <div className="flex flex-col items-center p-5 bg-white dark:bg-neutral-950 border border-neutral-200/50 dark:border-neutral-800/50 rounded-2xl space-y-4 shadow-sm relative overflow-hidden">
-                                {/* Ambient light glow based on HSL */}
-                                <div className="absolute inset-0 bg-primary-500/5 opacity-40 blur-[40px] pointer-events-none" />
-
-                                <div className="relative w-48 h-48 sm:w-56 sm:h-56 border border-neutral-100 dark:border-neutral-850 rounded-xl overflow-hidden shadow-inner flex items-center justify-center bg-white p-1">
-                                    <img 
-                                        src={qrImage} 
-                                        alt="UPI QR Code" 
-                                        className="w-full h-full object-contain"
-                                    />
-                                </div>
-
-                                <div className="text-center space-y-1 select-all">
-                                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest leading-none">
-                                        UPI ID (Click to Copy)
-                                    </p>
-                                    <p className="font-mono text-xs font-black text-neutral-800 dark:text-neutral-200 tracking-wide bg-neutral-50 dark:bg-neutral-900 border border-neutral-200/35 dark:border-neutral-800/40 px-3 py-1.5 rounded-lg inline-block cursor-pointer hover:border-primary-500 transition-colors">
-                                        {upiId}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* UTR Input Form block */}
-                            <div className="space-y-4">
-                                <div className="space-y-1.5">
-                                    <label htmlFor="payment-utr" className="text-xs font-bold text-neutral-550 dark:text-neutral-400 flex items-center gap-1.5">
-                                        <CreditCard className="w-3.5 h-3.5" />
-                                        12-Digit UPI Transaction Ref / UTR Number
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id="payment-utr"
-                                        value={utr}
-                                        onChange={(e) => setUtr(e.target.value.replace(/\D/g, "").slice(0, 12))}
-                                        placeholder="e.g. 123456789012"
-                                        className={`w-full px-4 py-3 rounded-xl bg-white dark:bg-neutral-950 border text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-1 font-mono tracking-wider transition-all ${
-                                            paymentError 
-                                                ? "border-red-500 focus:ring-red-500" 
-                                                : "border-neutral-200 dark:border-neutral-800 focus:ring-primary-500"
-                                        }`}
-                                    />
-                                    {paymentError && <p className="text-[10px] text-red-500 font-bold">{paymentError}</p>}
-                                    <p className="text-[9px] text-neutral-400 leading-normal flex items-start gap-1">
-                                        <Info className="w-3 h-3 text-neutral-400 flex-shrink-0 mt-0.5" />
-                                        You can locate the 12-digit UTR/Ref ID in your UPI app payment receipt details. Your order is held pending admin validation.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={isVerifying}
-                                className="w-full inline-flex items-center justify-center gap-2 py-4 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 active:scale-95 text-white text-sm font-extrabold rounded-xl transition-all shadow-lg shadow-primary-500/20 disabled:from-neutral-200 disabled:to-neutral-200 dark:disabled:from-neutral-800 dark:disabled:to-neutral-800 disabled:text-neutral-400 dark:disabled:text-neutral-600 disabled:scale-100 disabled:cursor-not-allowed cursor-pointer"
-                            >
-                                {isVerifying ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                        Submitting Payment Details...
-                                    </>
-                                ) : (
-                                    <>
-                                        <CheckCircle className="w-4 h-4" />
-                                        Confirm & Submit Order
-                                    </>
-                                )}
-                            </button>
-                        </form>
-
-                        {/* Summary Details card */}
-                        <div className="md:col-span-5 bg-neutral-50 dark:bg-neutral-900/30 border border-neutral-100 dark:border-neutral-900 rounded-3xl p-6 space-y-4 text-left shadow-sm">
-                            <h3 className="text-sm font-black uppercase tracking-wider text-neutral-900 dark:text-white pb-3 border-b border-neutral-200/60 dark:border-neutral-800/60">
-                                Payment Details
-                            </h3>
-
-                            <div className="space-y-3.5 text-xs font-semibold">
-                                <div className="flex justify-between text-neutral-500">
-                                    <span>Checkout items</span>
-                                    <span className="text-neutral-900 dark:text-white">{checkoutItems.length}</span>
-                                </div>
-                                <div className="flex justify-between text-neutral-500">
-                                    <span>Total Price</span>
-                                    <span className="text-base font-black text-primary-500">{formatINR(total)}</span>
-                                </div>
-                                <div className="pt-3 border-t border-neutral-200/60 dark:border-neutral-800/60 space-y-1">
-                                    <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest block">
-                                        Deliver to:
-                                    </span>
-                                    <p className="text-[11px] text-neutral-800 dark:text-neutral-200 font-extrabold">
-                                        {name}
-                                    </p>
-                                    <p className="text-[10px] text-neutral-500 leading-normal">
-                                        {address}, {pincode}
-                                    </p>
-                                    <p className="text-[10px] text-neutral-500">
-                                        Ph: {phone}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
                 {/* ── STEP 3: SUCCESS ── */}
                 {step === "success" && (
                     <div className="max-w-xl mx-auto bg-neutral-50 dark:bg-neutral-900/30 border border-neutral-100 dark:border-neutral-900 rounded-3xl p-8 space-y-6 text-center shadow-lg animate-scale-in">
@@ -615,7 +485,7 @@ function CheckoutContent() {
                         <div className="border border-neutral-200/50 dark:border-neutral-800/50 rounded-2xl p-4 space-y-3.5 text-left bg-white dark:bg-neutral-950/20">
                             <div className="flex justify-between items-center text-xs pb-2 border-b border-neutral-100 dark:border-neutral-850">
                                 <span className="text-neutral-450 font-bold uppercase tracking-wider text-[9px]">Receipt Summary</span>
-                                <span className="font-extrabold text-neutral-800 dark:text-neutral-200">UTR: {utr}</span>
+                                <span className="font-extrabold text-neutral-800 dark:text-neutral-200">Paid via Razorpay</span>
                             </div>
                             <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
                                 {checkoutItems.map((item) => (

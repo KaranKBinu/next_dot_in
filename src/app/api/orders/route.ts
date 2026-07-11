@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isAdminAuthed } from "@/lib/auth";
+import Razorpay from "razorpay";
 
 export async function GET() {
   try {
@@ -47,13 +48,12 @@ export async function POST(request: Request) {
       address, 
       pincode, 
       total, 
-      utr, 
       reservationCode, 
       directBuy, 
       items 
     } = body;
 
-    if (!id || !name || !phone || !address || !pincode || !total || !utr || !reservationCode || !items) {
+    if (!id || !name || !phone || !address || !pincode || !total || !reservationCode || !items) {
       return NextResponse.json(
         { error: "Missing required order fields" },
         { status: 400 }
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
           address,
           pincode,
           total,
-          utr,
+          utr: "RAZORPAY_PENDING",
           reservationCode,
           directBuy: !!directBuy,
           items: {
@@ -108,7 +108,22 @@ export async function POST(request: Request) {
       )
     ]);
 
-    return NextResponse.json({ success: true, order });
+    const razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID || "dummy",
+      key_secret: process.env.RAZORPAY_KEY_SECRET || "dummy",
+    });
+
+    const rzpOrder = await razorpay.orders.create({
+      amount: total * 100, // Amount in paise
+      currency: "INR",
+      receipt: order.id,
+    });
+
+    return NextResponse.json({ 
+      success: true, 
+      orderId: order.id,
+      razorpayOrderId: rzpOrder.id
+    });
   } catch (error) {
     console.error("Failed to create order in database:", error);
     return NextResponse.json(

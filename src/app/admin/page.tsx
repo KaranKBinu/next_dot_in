@@ -100,9 +100,6 @@ const EMPTY_FORM = {
 
 export default function AdminPage() {
     const router = useRouter();
-    // QR Code Config States
-    const [qrImage, setQrImage] = useState("/qr_code.jpg");
-    const [upiId, setUpiId] = useState("bothzmannhypo123@okicici");
     const [successMsg, setSuccessMsg] = useState("");
 
     // Orders State
@@ -177,13 +174,6 @@ export default function AdminPage() {
     useEffect(() => {
         const loadData = async () => {
             try {
-                const qrRes = await fetch("/api/qr-config");
-                if (qrRes.ok) {
-                    const data = await qrRes.json();
-                    if (data.qrCode) setQrImage(data.qrCode);
-                    if (data.upiId) setUpiId(data.upiId);
-                }
-
                 const ordersRes = await fetch("/api/orders");
                 if (ordersRes.ok) {
                     const data = await ordersRes.json();
@@ -202,75 +192,6 @@ export default function AdminPage() {
         loadData();
     }, []);
 
-    // Handle UPI ID submit
-    const handleUpdateUpi = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            const res = await fetch("/api/qr-config", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ upiId, qrCode: qrImage })
-            });
-            if (res.ok) {
-                showNotification("UPI ID updated in database!");
-            }
-        } catch (err) {
-            console.error("Failed to save UPI ID to database:", err);
-        }
-    };
-
-    // Handle QR code image upload
-    const handleQrUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        // Verify it is an image
-        if (!file.type.startsWith("image/")) {
-            alert("Please select a valid image file");
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-            const base64Data = reader.result as string;
-            setQrImage(base64Data);
-            try {
-                const res = await fetch("/api/qr-config", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ upiId, qrCode: base64Data })
-                });
-                if (res.ok) {
-                    showNotification("New QR Code saved to database!");
-                }
-            } catch (err) {
-                console.error("Failed to save QR Code to database:", err);
-            }
-        };
-        reader.readAsDataURL(file);
-    };
-
-    // Reset settings to default
-    const handleResetSettings = async () => {
-        if (confirm("Are you sure you want to reset payment configurations to default?")) {
-            const defaultQr = "/qr_code.jpg";
-            const defaultUpi = "bothzmannhypo123@okicici";
-            setQrImage(defaultQr);
-            setUpiId(defaultUpi);
-            try {
-                const res = await fetch("/api/qr-config", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ upiId: defaultUpi, qrCode: defaultQr })
-                });
-                if (res.ok) {
-                    showNotification("Payment settings reset to default in database.");
-                }
-            } catch (err) {
-                console.error("Failed to reset database QR config:", err);
-            }
-        }
-    };
 
     // Verify payment status toggle
     const handleToggleVerification = async (orderId: string) => {
@@ -575,98 +496,10 @@ export default function AdminPage() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                <div className="grid grid-cols-1 gap-8 items-start">
                     
-                    {/* Left: QR Code configuration settings (5 cols) */}
-                    <div className="lg:col-span-5 space-y-6">
-                        <div className="bg-neutral-50 dark:bg-neutral-900/30 border border-neutral-150/40 dark:border-neutral-900 rounded-3xl p-6 space-y-6 shadow-sm">
-                            <div className="pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
-                                <h3 className="text-sm font-black uppercase tracking-wider text-neutral-900 dark:text-white">
-                                    Payment Gateway Configuration
-                                </h3>
-                                <p className="text-[10px] text-neutral-400">
-                                    Change the active UPI receipt configuration dynamically.
-                                </p>
-                            </div>
-
-                            {/* Active Preview */}
-                            <div className="p-4 bg-white dark:bg-neutral-950 border border-neutral-200/50 dark:border-neutral-800/50 rounded-2xl flex items-center gap-4">
-                                <div className="w-20 h-20 border border-neutral-100 dark:border-neutral-900 rounded-lg flex items-center justify-center overflow-hidden bg-neutral-50/50 p-1 flex-shrink-0">
-                                    <img src={qrImage} alt="Preview QR" className="w-full h-full object-contain" />
-                                </div>
-                                <div className="space-y-1.5 flex-1 min-w-0">
-                                    <span className="text-[9px] font-black text-neutral-400 uppercase tracking-widest block leading-none">
-                                        Current UPI ID:
-                                    </span>
-                                    <p className="font-mono text-xs font-black text-neutral-800 dark:text-neutral-200 truncate select-all leading-none pb-1">
-                                        {upiId}
-                                    </p>
-                                    <button 
-                                        onClick={handleResetSettings}
-                                        className="inline-flex items-center gap-1 text-[10px] font-bold text-red-500 hover:text-red-600 transition-colors"
-                                    >
-                                        <RefreshCw className="w-3 h-3" />
-                                        Reset to Default QR
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Settings Forms */}
-                            <div className="space-y-4">
-                                {/* UPI ID edit */}
-                                <form onSubmit={handleUpdateUpi} className="space-y-2">
-                                    <label htmlFor="admin-upi-input" className="text-xs font-bold text-neutral-550 dark:text-neutral-400">
-                                        Receiver UPI VPA ID
-                                    </label>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            id="admin-upi-input"
-                                            value={upiId}
-                                            onChange={(e) => setUpiId(e.target.value)}
-                                            placeholder="e.g. merchant@bank"
-                                            className="flex-1 px-3 py-2 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-xs text-neutral-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-500 transition-all font-mono"
-                                        />
-                                        <button
-                                            type="submit"
-                                            className="px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-neutral-800 dark:hover:bg-neutral-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
-                                        >
-                                            Save ID
-                                        </button>
-                                    </div>
-                                </form>
-
-                                {/* File Upload */}
-                                <div className="space-y-2">
-                                    <span className="text-xs font-bold text-neutral-550 dark:text-neutral-400 block">
-                                        Receiver UPI QR Code Graphic
-                                    </span>
-                                    <div className="relative border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl p-6 text-center hover:bg-neutral-100/30 dark:hover:bg-neutral-900/10 transition-colors cursor-pointer group">
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleQrUpload}
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                        />
-                                        <div className="space-y-2">
-                                            <Upload className="w-6 h-6 text-neutral-400 mx-auto group-hover:text-primary-500 transition-colors" />
-                                            <div className="space-y-1">
-                                                <p className="text-xs font-bold text-neutral-600 dark:text-neutral-300">
-                                                    Click to upload QR image
-                                                </p>
-                                                <p className="text-[10px] text-neutral-400">
-                                                    Supports PNG, JPG, or WEBP formats
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Right: Orders audit list (7 cols) */}
-                    <div className="lg:col-span-7 space-y-6">
+                    {/* Orders audit list */}
+                    <div className="space-y-6">
                         <div className="bg-neutral-50 dark:bg-neutral-900/30 border border-neutral-150/40 dark:border-neutral-900 rounded-3xl p-6 shadow-sm space-y-6">
                             <div className="flex items-center justify-between pb-3 border-b border-neutral-200/50 dark:border-neutral-800/60">
                                 <div className="space-y-0.5">

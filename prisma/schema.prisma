@@ -6,12 +6,7 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model QRConfig {
-  id        String   @id @default("default")
-  upiId     String   @default("bothzmannhypo123@okicici")
-  qrCode    String   @db.Text
-  updatedAt DateTime @updatedAt
-}
+
 
 model Order {
   id              String      @id
