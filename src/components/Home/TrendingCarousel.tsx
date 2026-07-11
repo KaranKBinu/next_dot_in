@@ -25,7 +25,7 @@ interface TrendingProduct {
 
 const TRENDING_PRODUCTS: TrendingProduct[] = [
     {
-        id: "tr-1",
+        id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
         nameKey: "prod1Name",
         descKey: "prod1Desc",
         imagePath: "/products/vintage_tee.png",
@@ -37,7 +37,7 @@ const TRENDING_PRODUCTS: TrendingProduct[] = [
         hotness: 5,
     },
     {
-        id: "tr-2",
+        id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12",
         nameKey: "prod2Name",
         descKey: "prod2Desc",
         imagePath: "/products/denim_jeans.png",
@@ -49,7 +49,7 @@ const TRENDING_PRODUCTS: TrendingProduct[] = [
         hotness: 4,
     },
     {
-        id: "tr-3",
+        id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13",
         nameKey: "prod3Name",
         descKey: "prod3Desc",
         imagePath: "/products/worker_shirt.png",
@@ -61,7 +61,7 @@ const TRENDING_PRODUCTS: TrendingProduct[] = [
         hotness: 4,
     },
     {
-        id: "tr-4",
+        id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14",
         nameKey: "prod4Name",
         descKey: "prod4Desc",
         imagePath: "/products/cargo_pants.png",
@@ -74,7 +74,7 @@ const TRENDING_PRODUCTS: TrendingProduct[] = [
     },
     /* Repeat with slight variation to fill the strip nicely */
     {
-        id: "tr-5",
+        id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
         nameKey: "prod1Name",
         descKey: "prod1Desc",
         imagePath: "/products/vintage_tee.png",
@@ -86,7 +86,7 @@ const TRENDING_PRODUCTS: TrendingProduct[] = [
         hotness: 3,
     },
     {
-        id: "tr-6",
+        id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12",
         nameKey: "prod2Name",
         descKey: "prod2Desc",
         imagePath: "/products/denim_jeans.png",
@@ -161,7 +161,7 @@ export default function TrendingCarousel() {
     const handleClaim = (prod: TrendingProduct) => {
         const exists = cartItems.some((item) => item.id === prod.id);
         if (exists) {
-            alert("This 1-of-1 item is already reserved in your cart!");
+            alert("This item is already in your cart!");
             return;
         }
         addToCart({
@@ -206,7 +206,7 @@ export default function TrendingCarousel() {
             >
                 {TRENDING_PRODUCTS.map((prod, rank) => (
                     <article
-                        key={prod.id}
+                        key={`${prod.id}-${rank}`}
                         className="group relative flex-shrink-0 w-64 sm:w-72 snap-start rounded-2xl bg-white dark:bg-neutral-900 ring-1 ring-neutral-200/70 dark:ring-neutral-800/70 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden"
                     >
                         {/* Rank badge */}

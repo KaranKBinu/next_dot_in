@@ -1,0 +1,1 @@
+Next.js 16.2.7 (App Router) + React 19.2.4, TypeScript 5, Tailwind CSS v4 via `@tailwindcss/postcss`, Three.js 0.184 with `@types/three`, Prisma 7.8 with Neon serverless adapter, ESLint 9 flat config, PostCSS pipeline.

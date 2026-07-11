@@ -1,0 +1,1 @@
+Root configuration for a Next.js 16 + React 19 application with Prisma/Neon, Tailwind CSS v4, Three.js, and an Edge middleware-based admin session guard.

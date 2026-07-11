@@ -200,30 +200,9 @@ export default function Home() {
                                 {t.heroBtnShop}
                                 <ArrowRight className="w-4 h-4" />
                             </Link>
-                            <button className="px-7 py-4 rounded-xl border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 text-sm font-bold hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-700 active:scale-95 transition-all cursor-pointer">
-                                {t.heroBtnSell}
-                            </button>
                         </div>
 
-                        {/* Stats row */}
-                        <div className="pt-8 border-t border-neutral-100 dark:border-neutral-900 grid grid-cols-3 gap-6">
-                            {STATS.map((stat) => {
-                                const StatIcon = stat.icon;
-                                return (
-                                    <div key={stat.labelKey} className="space-y-1">
-                                        <div className="flex items-center gap-1.5">
-                                            <StatIcon className="w-4 h-4 text-neutral-400 dark:text-neutral-600" />
-                                            <span className="text-2xl md:text-3xl font-black text-neutral-950 dark:text-white tracking-tight">
-                                                {stat.value}
-                                            </span>
-                                        </div>
-                                        <p className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest leading-tight">
-                                            {t[stat.labelKey]}
-                                        </p>
-                                    </div>
-                                );
-                            })}
-                        </div>
+
                     </div>
 
                     {/* ── Hero Carousel column ── */}
@@ -423,58 +402,7 @@ export default function Home() {
                 </div>
             </section>
 
-            {/* ═══════════════════════════════════════════════════════════════
-                SECTION 6 — COMMUNITY / TESTIMONIALS
-            ═══════════════════════════════════════════════════════════════ */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-28">
-                <div className="text-center max-w-lg mx-auto space-y-3 mb-16">
-                    <Typography variant="overline" color="primary">
-                        {t.testimonialsTitle}
-                    </Typography>
-                    <Typography variant="h2" className="text-neutral-950 dark:text-white font-black tracking-tight">
-                        {t.testimonialsTitle}
-                    </Typography>
-                    <Typography variant="body2" color="muted" className="leading-relaxed">
-                        {t.testimonialsSubtitle}
-                    </Typography>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {REVIEWS.map((review, idx) => (
-                        <div 
-                            key={idx} 
-                            className="bg-neutral-50 dark:bg-neutral-900/30 p-8 rounded-2xl border border-neutral-100 dark:border-neutral-900 flex flex-col justify-between hover:shadow-lg transition-shadow duration-300 text-left"
-                        >
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-1 text-amber-500">
-                                    {[...Array(5)].map((_, i) => (
-                                        <Star key={i} className="w-4 h-4 fill-amber-500 text-amber-500" />
-                                    ))}
-                                </div>
-                                <div className="relative">
-                                    <Quote className="w-8 h-8 text-primary-100 dark:text-neutral-800 absolute -top-4 -left-2 -z-0 opacity-50" />
-                                    <p className="relative z-10 text-sm text-neutral-600 dark:text-neutral-300 italic leading-relaxed">
-                                        "{t[review.textKey]}"
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3 pt-6 mt-6 border-t border-neutral-100 dark:border-neutral-900">
-                                <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-950/50 flex items-center justify-center text-xs font-bold text-primary-700 dark:text-primary-300">
-                                    {review.initials}
-                                </div>
-                                <div>
-                                    <h4 className="text-sm font-bold text-neutral-900 dark:text-white">
-                                        {t[review.authorKey]}
-                                    </h4>
-                                    <p className="text-xs text-neutral-400 dark:text-neutral-500 font-semibold">
-                                        {t[review.roleKey]}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </section>
 
             {/* ═══════════════════════════════════════════════════════════════
                 SECTION 7 — INTERACTIVE FAQ

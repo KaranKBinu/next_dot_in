@@ -17,8 +17,90 @@ import {
     Info, 
     Sparkles,
     Flame,
-    CheckCircle
+    CheckCircle,
+    Loader2,
+    X
 } from "lucide-react";
+
+// Shape coming back from /api/products
+interface DbProduct {
+    id: string;
+    parentProductId: string | null;
+    sku: string;
+    name: string;
+    description: string;
+    brand: string;
+    year: string;
+    category: string;
+    material: string;
+    size: string;
+    colorName: string;
+    colorHex: string;
+    priceInRupees: number;
+    imagePath: string;
+    chestInch: string;
+    lengthInch: string;
+    shoulderInch: string;
+    condition: string;
+    hotness: number;
+    stockQuantity: number;
+}
+
+/** Map and group flat DB product rows by parentProductId (or id if null) */
+function groupDbProducts(data: DbProduct[]): { product: Product; variant: ProductVariant }[] {
+    const groups: { [key: string]: DbProduct[] } = {};
+    data.forEach((p) => {
+        const key = p.parentProductId || p.id;
+        if (!groups[key]) {
+            groups[key] = [];
+        }
+        groups[key].push(p);
+    });
+
+    const result: { product: Product; variant: ProductVariant }[] = [];
+    Object.entries(groups).forEach(([groupId, items]) => {
+        const variants: ProductVariant[] = items.map((p) => ({
+            sku: p.sku,
+            size: p.size,
+            colorName: p.colorName,
+            colorHex: p.colorHex,
+            priceInRupees: p.priceInRupees,
+            imagePath: p.imagePath,
+            measurements: { chest: p.chestInch, length: p.lengthInch, shoulder: p.shoulderInch },
+            conditionKey: (p.condition as ProductVariant["conditionKey"]) || "condVeryGood",
+            hotness: (Math.min(5, Math.max(1, p.hotness)) as 1 | 2 | 3 | 4 | 5),
+            stockQuantity: p.stockQuantity,
+        }));
+
+        const primaryItem = items[0];
+        const primaryVariant = variants[0];
+
+        const product: Product = {
+            id: groupId,
+            nameKey: primaryItem.name,
+            descKey: primaryItem.description,
+            brand: primaryItem.brand,
+            year: primaryItem.year,
+            category: primaryItem.category as Product["category"],
+            materialKey: "matCotton" as Product["materialKey"],
+            variants: variants,
+            sku: primaryVariant.sku,
+            size: primaryVariant.size,
+            colorName: primaryVariant.colorName,
+            colorHex: primaryVariant.colorHex,
+            priceInRupees: primaryVariant.priceInRupees,
+            imagePath: primaryVariant.imagePath,
+            measurements: primaryVariant.measurements,
+            conditionKey: primaryVariant.conditionKey,
+            hotness: primaryVariant.hotness,
+            stockQuantity: primaryVariant.stockQuantity,
+        };
+
+        result.push({ product, variant: primaryVariant });
+    });
+
+    return result;
+}
 
 interface ProductPageProps {
     params: Promise<{ id: string }>;
@@ -33,10 +115,34 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
     // Accordion states
     const [activeTab, setActiveTab] = useState<"details" | "measurements" | "eco">("details");
 
-    // Fetch product
+    // DB products state
+    const [dbProducts, setDbProducts] = useState<{ product: Product; variant: ProductVariant }[]>([]);
+    const [loadingProducts, setLoadingProducts] = useState(true);
+
+    useEffect(() => {
+        fetch("/api/products")
+            .then((r) => r.json())
+            .then((data: DbProduct[]) => {
+                setDbProducts(groupDbProducts(data));
+            })
+            .catch((err) => console.error("Failed to load DB products:", err))
+            .finally(() => setLoadingProducts(false));
+    }, []);
+
+    // Merged product list (DB + static PRODUCTS fallback)
+    const dbSkus = useMemo(() => new Set(dbProducts.map((e) => e.variant.sku)), [dbProducts]);
+    const allProductEntries = useMemo(() => {
+        const staticEntries = PRODUCTS
+            .filter((p) => !dbSkus.has(p.sku))
+            .map((p) => ({ product: p, variant: p.variants[0] }));
+        return [...dbProducts, ...staticEntries];
+    }, [dbProducts, dbSkus]);
+
+    // Find the product matching the current URL ID
     const product = useMemo(() => {
-        return PRODUCTS.find(p => p.id === productId);
-    }, [productId]);
+        const found = allProductEntries.find(e => e.product.id === productId);
+        return found ? found.product : null;
+    }, [allProductEntries, productId]);
 
     // Active variant state (initialized to first variant of the product)
     const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
@@ -51,8 +157,11 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
     // Fetch related products (same category, excluding current)
     const relatedProducts = useMemo(() => {
         if (!product) return [];
-        return PRODUCTS.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4);
-    }, [product]);
+        return allProductEntries
+            .filter(e => e.product.category === product.category && e.product.id !== product.id)
+            .map(e => e.product)
+            .slice(0, 4);
+    }, [product, allProductEntries]);
 
     // Calculate unique colors for swatches
     const colors = useMemo(() => {
@@ -67,6 +176,15 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
         });
         return res;
     }, [product]);
+
+    if (loadingProducts) {
+        return (
+            <main className="flex-1 bg-white dark:bg-neutral-950 py-24 text-center space-y-4 flex flex-col items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+                <p className="text-xs font-bold text-neutral-500">Loading product details...</p>
+            </main>
+        );
+    }
 
     if (!product || !selectedVariant) {
         return (
@@ -271,19 +389,18 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                                 <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-0.5">
                                     Availability
                                 </span>
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-extrabold bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 rounded-full">
-                                    <CheckCircle className="w-3.5 h-3.5" />
-                                    In Stock (1-of-1 SKU)
-                                </span>
+                                {selectedVariant.stockQuantity > 0 ? (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-extrabold bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 rounded-full">
+                                        <CheckCircle className="w-3.5 h-3.5" />
+                                        Only {selectedVariant.stockQuantity} Left!
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-extrabold bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-full">
+                                        <X className="w-3.5 h-3.5" />
+                                        Out of Stock
+                                    </span>
+                                )}
                             </div>
-                        </div>
-
-                        {/* Reservation Alert Note */}
-                        <div className="p-4 bg-amber-50/50 dark:bg-amber-950/10 border border-amber-100 dark:border-amber-900/40 rounded-2xl flex items-start gap-3">
-                            <Info className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                            <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed font-semibold">
-                                **Reservation Note:** Claiming this item holds it for **2 days** (configurable). If not purchased, the reservation expires and the item returns to the store catalog where it can be claimed by others.
-                            </p>
                         </div>
 
                         {/* Actions */}
@@ -291,18 +408,25 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                             <div className="flex flex-col sm:flex-row gap-4">
                                 <button
                                     onClick={handleClaim}
-                                    className={`flex-1 inline-flex items-center justify-center gap-2 py-4 rounded-xl text-sm font-extrabold transition-all active:scale-95 cursor-pointer ${
-                                        inCart
-                                            ? "bg-green-500 hover:bg-green-400 text-white shadow-lg shadow-green-500/25"
-                                            : "bg-primary-500 hover:bg-primary-400 text-white shadow-lg shadow-primary-500/25"
+                                    disabled={selectedVariant.stockQuantity <= 0}
+                                    className={`flex-1 inline-flex items-center justify-center gap-2 py-4 rounded-xl text-sm font-extrabold transition-all cursor-pointer ${
+                                        selectedVariant.stockQuantity <= 0
+                                            ? "bg-neutral-200 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed"
+                                            : inCart
+                                                ? "bg-green-500 hover:bg-green-400 text-white shadow-lg shadow-green-500/25 active:scale-95"
+                                                : "bg-primary-500 hover:bg-primary-400 text-white shadow-lg shadow-primary-500/25 active:scale-95"
                                     }`}
                                 >
                                     <ShoppingBag className="w-4 h-4 stroke-[2.5]" />
-                                    {inCart ? `Reserved (${reservationCode})` : t.cardBtnClaim}
+                                    {selectedVariant.stockQuantity <= 0 ? "Out of Stock" : inCart ? `Added to Cart` : t.cardBtnClaim}
                                 </button>
                                 <Link
-                                    href={`/checkout?sku=${selectedVariant.sku}`}
-                                    className="flex-1 inline-flex items-center justify-center gap-2 py-4 bg-neutral-950 hover:bg-neutral-900 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-white text-sm font-extrabold rounded-xl transition-all active:scale-95 cursor-pointer shadow-lg shadow-neutral-900/10"
+                                    href={selectedVariant.stockQuantity > 0 ? `/checkout?sku=${selectedVariant.sku}` : "#"}
+                                    className={`flex-1 inline-flex items-center justify-center gap-2 py-4 text-white text-sm font-extrabold rounded-xl transition-all cursor-pointer shadow-lg shadow-neutral-900/10 ${
+                                        selectedVariant.stockQuantity <= 0
+                                            ? "bg-neutral-200 dark:bg-neutral-800 text-neutral-400 pointer-events-none cursor-not-allowed"
+                                            : "bg-neutral-950 hover:bg-neutral-900 dark:bg-neutral-800 dark:hover:bg-neutral-700 active:scale-95"
+                                    }`}
                                 >
                                     <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
                                     Buy Now (Direct)
@@ -313,7 +437,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
                                     href="/cart"
                                     className="w-full py-3 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5"
                                 >
-                                    <span>You have this reserved in your cart. View Cart</span>
+                                    <span>This item is in your cart. View Cart</span>
                                     <ChevronRight className="w-3.5 h-3.5" />
                                 </Link>
                             )}

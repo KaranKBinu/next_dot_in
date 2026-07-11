@@ -1,0 +1,68 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model QRConfig {
+  id        String   @id @default("default")
+  upiId     String   @default("bothzmannhypo123@okicici")
+  qrCode    String   @db.Text
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id              String      @id
+  date            DateTime    @default(now())
+  name            String
+  phone           String
+  address         String
+  pincode         String
+  total           Int
+  utr             String
+  reservationCode String
+  paymentStatus   String      @default("pending") // "pending" | "verified"
+  directBuy       Boolean     @default(false)
+  items           OrderItem[]
+}
+
+model OrderItem {
+  id            String @id @default(uuid())
+  orderId       String
+  order         Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sku           String
+  nameKey       String
+  brand         String
+  size          String
+  colorName     String
+  priceInRupees Int
+  imagePath     String
+}
+
+model Product {
+  id              String   @id @default(uuid())
+  parentProductId String?
+  sku             String   @unique
+  name            String
+  description     String
+  brand           String
+  year            String
+  category        String   // "tees" | "denim" | "knits" | "cargo"
+  material        String
+  size            String
+  colorName       String
+  colorHex        String
+  priceInRupees   Int
+  imagePath       String   @db.Text
+  chestInch       String
+  lengthInch      String
+  shoulderInch    String
+  condition       String   // "condExcellent" | "condVeryGood" | "condGood"
+  hotness         Int      @default(3)
+  isActive        Boolean  @default(true)
+  stockQuantity   Int      @default(1)
+  createdAt       DateTime @default(now())
+}
+

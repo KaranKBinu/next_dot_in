@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { useNavbar } from "@/components/Navbar/NavbarContext";
 import { TRANSLATIONS } from "@/utils/i18n";
 import { AtSign, Hash, Play, ArrowUpRight } from "lucide-react";
@@ -77,13 +78,13 @@ export default function Footer() {
                 {/* Brand column — spans 2 on large screens */}
                 <div className="lg:col-span-2 space-y-5">
                     {/* Logo */}
-                    <a
+                    <Link
                         href="/"
                         id="footer-logo"
                         className="inline-block text-xl font-black tracking-tight text-neutral-950 dark:text-white hover:text-primary-500 dark:hover:text-primary-400 transition-colors"
                     >
                         next<span className="text-primary-500">.</span>in
-                    </a>
+                    </Link>
 
                     {/* Tagline */}
                     <p className="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed max-w-xs">

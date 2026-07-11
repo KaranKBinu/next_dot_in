@@ -75,32 +75,46 @@ function CheckoutContent() {
     const [qrImage, setQrImage] = useState("/qr_code.jpg");
     const [upiId, setUpiId] = useState("bothzmannhypo123@okicici");
 
+    const [dbProducts, setDbProducts] = useState<any[]>([]);
+
     useEffect(() => {
-        if (typeof window !== "undefined") {
-            const storedQR = localStorage.getItem("next_in_qr_code_image");
-            const storedUPI = localStorage.getItem("next_in_qr_code_upi");
-            if (storedQR) setQrImage(storedQR);
-            if (storedUPI) setUpiId(storedUPI);
+        const loadQRConfig = async () => {
+            try {
+                const res = await fetch("/api/qr-config");
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.qrCode) setQrImage(data.qrCode);
+                    if (data.upiId) setUpiId(data.upiId);
+                }
+            } catch (err) {
+                console.error("Failed to load QR config from API, using default fallbacks:", err);
+            }
+        };
+        loadQRConfig();
+
+        if (directBuySku) {
+            fetch("/api/products")
+                .then((r) => r.json())
+                .then((data) => setDbProducts(data))
+                .catch((err) => console.error("Failed to load products for checkout:", err));
         }
-    }, []);
+    }, [directBuySku]);
 
     // Resolve items and pricing
     const checkoutItems = useMemo<OrderItem[]>(() => {
         if (directBuySku) {
-            // Find specific variant in catalog
-            for (const prod of PRODUCTS) {
-                const variant = prod.variants.find(v => v.sku === directBuySku);
-                if (variant) {
-                    return [{
-                        sku: variant.sku,
-                        nameKey: prod.nameKey,
-                        brand: prod.brand,
-                        size: variant.size,
-                        colorName: variant.colorName,
-                        priceInRupees: variant.priceInRupees,
-                        imagePath: variant.imagePath
-                    }];
-                }
+            // Find specific variant in database products
+            const matched = dbProducts.find(p => p.sku === directBuySku);
+            if (matched) {
+                return [{
+                    sku: matched.sku,
+                    nameKey: matched.name,
+                    brand: matched.brand,
+                    size: matched.size,
+                    colorName: matched.colorName,
+                    priceInRupees: matched.priceInRupees,
+                    imagePath: matched.imagePath
+                }];
             }
             return [];
         } else {
@@ -115,7 +129,7 @@ function CheckoutContent() {
                 imagePath: item.imagePath
             }));
         }
-    }, [directBuySku, cartItems]);
+    }, [directBuySku, cartItems, dbProducts]);
 
     const subtotal = useMemo(() => {
         return checkoutItems.reduce((acc, item) => acc + item.priceInRupees, 0);
@@ -186,39 +200,46 @@ function CheckoutContent() {
 
         setIsVerifying(true);
 
-        // Simulate network delay for verification
-        setTimeout(() => {
-            setIsVerifying(false);
-            
-            // Generate reservation code for the order
-            const code = directBuySku ? generateReservationCode() : (cartResCode || generateReservationCode());
-            setGeneratedCode(code);
+        const code = directBuySku ? generateReservationCode() : (cartResCode || generateReservationCode());
+        const orderId = `ORD-${Date.now().toString().slice(-6)}`;
 
-            // Persist order in localStorage
-            const storedOrders = localStorage.getItem("next_in_orders");
-            const currentOrders = storedOrders ? JSON.parse(storedOrders) : [];
-            
-            const newOrder = {
-                id: `ORD-${Date.now().toString().slice(-6)}`,
-                date: Date.now(),
-                items: checkoutItems,
-                total: total,
-                customerInfo: { name, phone, address, pincode },
-                paymentStatus: "pending", // admin verifies payment
+        fetch("/api/orders", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                id: orderId,
+                name,
+                phone,
+                address,
+                pincode,
+                total,
                 utr: cleanedUtr,
                 reservationCode: code,
-                directBuy: !!directBuySku
-            };
-
-            localStorage.setItem("next_in_orders", JSON.stringify([newOrder, ...currentOrders]));
-
-            // Clear cart if this was standard checkout
+                directBuy: !!directBuySku,
+                items: checkoutItems
+            })
+        })
+        .then(async (res) => {
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.error || "Failed to create order");
+            }
+            
+            setGeneratedCode(code);
             if (!directBuySku) {
                 clearCart();
             }
-
             setStep("success");
-        }, 1500);
+        })
+        .catch(err => {
+            console.error("Failed to post order to database API:", err);
+            setPaymentError(err.message || "Failed to process order.");
+        })
+        .finally(() => {
+            setIsVerifying(false);
+        });
     };
 
     return (
@@ -503,7 +524,7 @@ function CheckoutContent() {
                                     {paymentError && <p className="text-[10px] text-red-500 font-bold">{paymentError}</p>}
                                     <p className="text-[9px] text-neutral-400 leading-normal flex items-start gap-1">
                                         <Info className="w-3 h-3 text-neutral-400 flex-shrink-0 mt-0.5" />
-                                        You can locate the 12-digit UTR/Ref ID in your UPI app payment receipt details. Your claim is held pending admin validation.
+                                        You can locate the 12-digit UTR/Ref ID in your UPI app payment receipt details. Your order is held pending admin validation.
                                     </p>
                                 </div>
                             </div>
@@ -577,16 +598,16 @@ function CheckoutContent() {
                             </p>
                         </div>
 
-                        {/* Claim code box */}
+                        {/* Order code box */}
                         <div className="p-4 bg-white dark:bg-neutral-950 border border-neutral-200/60 dark:border-neutral-800/60 rounded-2xl flex flex-col items-center justify-center gap-2 shadow-xs">
                             <span className="text-[10px] font-extrabold uppercase tracking-widest text-neutral-450 leading-none">
-                                ESCROW CLAIM RESERVATION CODE:
+                                ORDER REFERENCE CODE:
                             </span>
                             <span className="font-mono text-base font-black text-emerald-600 dark:text-emerald-400 lowercase tracking-wider bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1 rounded border border-emerald-100/50 dark:border-emerald-900/50 shadow-inner">
                                 {generatedCode}
                             </span>
                             <p className="text-[9px] text-neutral-400 italic">
-                                Save this code to claim your reservation or enquire about shipping.
+                                Save this code to track your order or enquire about shipping.
                             </p>
                         </div>
 

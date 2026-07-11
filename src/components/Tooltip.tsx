@@ -21,7 +21,7 @@ interface TooltipProps {
     content: React.ReactNode;
     placement?: TooltipPlacement;
     delay?: number; // Delay in ms before showing
-    children: React.ReactElement<any>; // Must be a single React element
+    children: React.ReactElement; // Must be a single React element
     className?: string;
 }
 

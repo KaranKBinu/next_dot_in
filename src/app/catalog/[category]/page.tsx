@@ -1,22 +1,103 @@
 "use client";
 
-import React, { useState, use, useMemo } from "react";
+import React, { useState, use, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useCart } from "@/components/Cart/CartContext";
 import { useNavbar } from "@/components/Navbar/NavbarContext";
 import { TRANSLATIONS, formatINR } from "@/utils/i18n";
 import { PRODUCTS, CATEGORIES_META, Product, ProductVariant } from "@/utils/catalog";
 import Typography from "@/components/Typography";
-import { 
-    Search, 
-    SlidersHorizontal, 
-    ArrowUpDown, 
-    ShoppingBag, 
+import {
+    Search,
+    SlidersHorizontal,
+    ArrowUpDown,
+    ShoppingBag,
     ChevronRight,
     Flame,
     X,
-    Sparkles
+    Sparkles,
+    Loader2
 } from "lucide-react";
+
+// Shape coming back from /api/products
+interface DbProduct {
+    id: string;
+    parentProductId: string | null;
+    sku: string;
+    name: string;
+    description: string;
+    brand: string;
+    year: string;
+    category: string;
+    material: string;
+    size: string;
+    colorName: string;
+    colorHex: string;
+    priceInRupees: number;
+    imagePath: string;
+    chestInch: string;
+    lengthInch: string;
+    shoulderInch: string;
+    condition: string;
+    hotness: number;
+    stockQuantity: number;
+}
+
+/** Map and group flat DB product rows by parentProductId (or id if null) */
+function groupDbProducts(data: DbProduct[]): { product: Product; variant: ProductVariant }[] {
+    const groups: { [key: string]: DbProduct[] } = {};
+    data.forEach((p) => {
+        const key = p.parentProductId || p.id;
+        if (!groups[key]) {
+            groups[key] = [];
+        }
+        groups[key].push(p);
+    });
+
+    const result: { product: Product; variant: ProductVariant }[] = [];
+    Object.entries(groups).forEach(([groupId, items]) => {
+        const variants: ProductVariant[] = items.map((p) => ({
+            sku: p.sku,
+            size: p.size,
+            colorName: p.colorName,
+            colorHex: p.colorHex,
+            priceInRupees: p.priceInRupees,
+            imagePath: p.imagePath,
+            measurements: { chest: p.chestInch, length: p.lengthInch, shoulder: p.shoulderInch },
+            conditionKey: (p.condition as ProductVariant["conditionKey"]) || "condVeryGood",
+            hotness: (Math.min(5, Math.max(1, p.hotness)) as 1 | 2 | 3 | 4 | 5),
+            stockQuantity: p.stockQuantity,
+        }));
+
+        const primaryItem = items[0];
+        const primaryVariant = variants[0];
+
+        const product: Product = {
+            id: groupId,
+            nameKey: primaryItem.name,
+            descKey: primaryItem.description,
+            brand: primaryItem.brand,
+            year: primaryItem.year,
+            category: primaryItem.category as Product["category"],
+            materialKey: "matCotton" as Product["materialKey"],
+            variants: variants,
+            sku: primaryVariant.sku,
+            size: primaryVariant.size,
+            colorName: primaryVariant.colorName,
+            colorHex: primaryVariant.colorHex,
+            priceInRupees: primaryVariant.priceInRupees,
+            imagePath: primaryVariant.imagePath,
+            measurements: primaryVariant.measurements,
+            conditionKey: primaryVariant.conditionKey,
+            hotness: primaryVariant.hotness,
+            stockQuantity: primaryVariant.stockQuantity,
+        };
+
+        result.push({ product, variant: primaryVariant });
+    });
+
+    return result;
+}
 
 interface CategoryPageProps {
     params: Promise<{ category: string }>;
@@ -28,6 +109,20 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     const t = TRANSLATIONS[locale];
     const { addToCart, cartItems } = useCart();
 
+    // DB products state
+    const [dbProducts, setDbProducts] = useState<{ product: Product; variant: ProductVariant }[]>([]);
+    const [loadingProducts, setLoadingProducts] = useState(true);
+
+    useEffect(() => {
+        fetch("/api/products")
+            .then((r) => r.json())
+            .then((data: DbProduct[]) => {
+                setDbProducts(groupDbProducts(data));
+            })
+            .catch((err) => console.error("Failed to load DB products:", err))
+            .finally(() => setLoadingProducts(false));
+    }, []);
+
     // Filters state
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
@@ -36,25 +131,34 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     const [sortBy, setSortBy] = useState<string>("hotness");
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
+    // Merged product list: DB products first, then static (excluding any SKU already in DB)
+    const dbSkus = useMemo(() => new Set(dbProducts.map((e) => e.variant.sku)), [dbProducts]);
+    const allProductEntries = useMemo(() => {
+        const staticEntries = PRODUCTS
+            .filter((p) => !dbSkus.has(p.sku))
+            .map((p) => ({ product: p, variant: p.variants[0] }));
+        return [...dbProducts, ...staticEntries];
+    }, [dbProducts, dbSkus]);
+
     // Dynamic list of unique sizes from all variants in catalog
     const allSizes = useMemo(() => {
         const sizes = new Set<string>();
-        PRODUCTS.forEach(p => p.variants.forEach(v => sizes.add(v.size)));
+        allProductEntries.forEach(({ variant }) => sizes.add(variant.size));
         return Array.from(sizes).sort();
-    }, []);
+    }, [allProductEntries]);
 
     // Dynamic list of unique colors from all variants in catalog
     const allColors = useMemo(() => {
-        const colorsMap = new Map<string, string>(); // colorName -> colorHex
-        PRODUCTS.forEach(p => p.variants.forEach(v => colorsMap.set(v.colorName, v.colorHex)));
+        const colorsMap = new Map<string, string>();
+        allProductEntries.forEach(({ variant }) => colorsMap.set(variant.colorName, variant.colorHex));
         return Array.from(colorsMap.entries()).map(([name, hex]) => ({ name, hex }));
-    }, []);
+    }, [allProductEntries]);
 
     // Filter & Sort logic
     const filteredProductsWithVariants = useMemo(() => {
         const list: { product: Product; variant: ProductVariant }[] = [];
 
-        PRODUCTS.forEach((product) => {
+        allProductEntries.forEach(({ product, variant: defaultVariant }) => {
             // Category check
             if (categorySlug !== "all" && product.category !== categorySlug) {
                 return;
@@ -72,45 +176,31 @@ export default function CategoryPage({ params }: CategoryPageProps) {
 
             // Check if any variants match filters
             const matchingVariants = product.variants.filter((variant) => {
-                // Size filter
-                if (selectedSizes.length > 0 && !selectedSizes.includes(variant.size)) {
-                    return false;
-                }
-
-                // Color filter
-                if (selectedColors.length > 0 && !selectedColors.includes(variant.colorName)) {
-                    return false;
-                }
-
-                // Price filter
+                if (selectedSizes.length > 0 && !selectedSizes.includes(variant.size)) return false;
+                if (selectedColors.length > 0 && !selectedColors.includes(variant.colorName)) return false;
                 if (selectedPriceRange !== "all") {
                     const price = variant.priceInRupees;
                     if (selectedPriceRange === "under3500" && price >= 3500) return false;
                     if (selectedPriceRange === "3500to5000" && (price < 3500 || price > 5000)) return false;
                     if (selectedPriceRange === "over5000" && price <= 5000) return false;
                 }
-
                 return true;
             });
 
-            // If variants match, display the product using the first matching variant
             if (matchingVariants.length > 0) {
                 list.push({ product, variant: matchingVariants[0] });
+            } else if (product.variants.length === 0) {
+                // DB product with no extra variants — use the flat defaultVariant
+                list.push({ product, variant: defaultVariant });
             }
         });
 
-        // Sort items
         return list.sort((a, b) => {
-            if (sortBy === "priceAsc") {
-                return a.variant.priceInRupees - b.variant.priceInRupees;
-            }
-            if (sortBy === "priceDesc") {
-                return b.variant.priceInRupees - a.variant.priceInRupees;
-            }
-            // default: hotness
+            if (sortBy === "priceAsc") return a.variant.priceInRupees - b.variant.priceInRupees;
+            if (sortBy === "priceDesc") return b.variant.priceInRupees - a.variant.priceInRupees;
             return b.variant.hotness - a.variant.hotness;
         });
-    }, [categorySlug, searchQuery, selectedSizes, selectedColors, selectedPriceRange, sortBy, locale]);
+    }, [allProductEntries, categorySlug, searchQuery, selectedSizes, selectedColors, selectedPriceRange, sortBy, locale]);
 
     const handleSizeToggle = (size: string) => {
         setSelectedSizes(prev => 
@@ -149,6 +239,17 @@ export default function CategoryPage({ params }: CategoryPageProps) {
             </div>
         );
     };
+
+    if (loadingProducts) {
+        return (
+            <main className="flex-1 bg-white dark:bg-neutral-950 flex items-center justify-center min-h-[60vh]">
+                <div className="flex flex-col items-center gap-3 text-neutral-400">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+                    <span className="text-xs font-bold uppercase tracking-widest">Loading Catalog…</span>
+                </div>
+            </main>
+        );
+    }
 
     return (
         <main className="flex-1 bg-white dark:bg-neutral-950 pb-24 pt-8">
@@ -471,7 +572,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
                                                             }`}
                                                         >
                                                             <ShoppingBag className="w-3.5 h-3.5 stroke-[2.5]" />
-                                                            {inCart ? "✓ Reserved" : t.cardBtnClaim}
+                                                            {inCart ? "✓ Added" : t.cardBtnClaim}
                                                         </button>
                                                     </div>
                                                 </div>
