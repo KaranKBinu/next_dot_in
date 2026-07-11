@@ -17,11 +17,15 @@ export type TooltipPlacement =
     | "right-start"
     | "right-end";
 
+interface TooltipChildProps extends React.HTMLAttributes<HTMLElement> {
+    "aria-describedby"?: string;
+}
+
 interface TooltipProps {
     content: React.ReactNode;
     placement?: TooltipPlacement;
     delay?: number; // Delay in ms before showing
-    children: React.ReactElement; // Must be a single React element
+    children: React.ReactElement<TooltipChildProps>; // Must be a single React element
     className?: string;
 }
 
