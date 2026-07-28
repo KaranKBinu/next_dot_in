@@ -1,2 +1,0 @@
-- Edge-runtime secrets are re-exported from `next.config.ts` via the `env` field so they are available inside `middleware.ts`.
-- Admin routes under `/admin/**` are protected uniformly by the global Edge `middleware.ts` using a cookie-based token check rather than per-route guards.

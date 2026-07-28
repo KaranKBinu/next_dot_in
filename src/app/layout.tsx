@@ -1,60 +1,35 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Noto_Sans_Devanagari, Noto_Sans_Malayalam } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
+import { getCurrentSession } from "@/lib/auth";
+import { getSystemSettings } from "@/lib/settings";
+import { CartProvider } from "@/components/CartContext";
+import { WishlistProvider } from "@/components/WishlistContext";
+import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { NavbarProvider } from "@/components/Navbar/NavbarContext";
-import { CartProvider } from "@/components/Cart/CartContext";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-// Devanagari script — used for Hindi (hi)
-const notoSansDevanagari = Noto_Sans_Devanagari({
-  variable: "--font-devanagari",
-  subsets: ["devanagari"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  display: "swap",
-});
-
-// Malayalam script — used for Malayalam (ml)
-const notoSansMalayalam = Noto_Sans_Malayalam({
-  variable: "--font-malayalam",
-  subsets: ["malayalam"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
-  title: "next dot in",
-  description: "next.in is your go-to thrift store for discovering pre-loved fashion, vintage finds, and sustainable style — all at unbeatable prices. Shop curated second-hand clothing, accessories, and more.",
+  title: "NEXT.IN | Architectural Essentials",
+  description: "Minimalist fashion and architectural clothing items.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getCurrentSession();
+  const settings = await getSystemSettings();
+
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${notoSansDevanagari.variable} ${notoSansMalayalam.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
-        <NavbarProvider>
-          <CartProvider>
-            <Navbar />
-            {children}
+    <html lang="en" className="h-full antialiased">
+      <body className="min-h-full flex flex-col bg-[#FAFAF8] text-[#111827] font-sans selection:bg-[#111827] selection:text-white">
+        <CartProvider>
+          <WishlistProvider>
+            <Header user={user} settings={settings} />
+            <div className="flex-1 flex flex-col">{children}</div>
             <Footer />
-          </CartProvider>
-        </NavbarProvider>
+          </WishlistProvider>
+        </CartProvider>
       </body>
     </html>
   );

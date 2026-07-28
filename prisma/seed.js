@@ -1,599 +1,127 @@
-const { PrismaClient } = require("@prisma/client");
-const { PrismaNeon } = require("@prisma/adapter-neon");
+import { PrismaClient } from "@prisma/client";
+import { PrismaNeon } from "@prisma/adapter-neon";
+import { Pool } from "@neondatabase/serverless";
+import crypto from "crypto";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const connectionString = process.env.DATABASE_URL;
-const adapter = new PrismaNeon({ connectionString });
+const pool = new Pool({ connectionString });
+const adapter = new PrismaNeon(pool);
 const prisma = new PrismaClient({ adapter });
 
-const PRODUCTS_TO_SEED = [
-    // Product 1
-    {
-        id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
-        sku: "prod-1-L-orange",
-        parentProductId: null,
-        name: "Vintage Graphic Tee",
-        description: "Curated 1994 authentic heavyweight cotton tee with a distressed front graphic print.",
-        brand: "Champion (Classic)",
-        year: "1994",
-        category: "tees",
-        material: "matCotton",
-        size: "L",
-        colorName: "Rust Orange",
-        colorHex: "#ff5722",
-        priceInRupees: 2900,
-        imagePath: "/products/vintage_tee_orange.png",
-        chestInch: "22\"",
-        lengthInch: "29\"",
-        shoulderInch: "19.5\"",
-        condition: "condExcellent",
-        hotness: 5
-    },
-    {
-        sku: "prod-1-M-black",
-        parentProductId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
-        name: "Vintage Graphic Tee",
-        description: "Curated 1994 authentic heavyweight cotton tee with a distressed front graphic print.",
-        brand: "Champion (Classic)",
-        year: "1994",
-        category: "tees",
-        material: "matCotton",
-        size: "M",
-        colorName: "Vintage Black",
-        colorHex: "#212121",
-        priceInRupees: 2700,
-        imagePath: "/products/vintage_tee_black.png",
-        chestInch: "20\"",
-        lengthInch: "28\"",
-        shoulderInch: "18.5\"",
-        condition: "condVeryGood",
-        hotness: 4
-    },
-    // Product 2
-    {
-        id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12",
-        sku: "prod-2-32-blue",
-        parentProductId: null,
-        name: "Classic Denim 501 Jeans",
-        description: "Hard-to-find vintage wash Levi's 501s with premium straight-leg fit and copper rivets.",
-        brand: "Levi's (Curated)",
-        year: "1988",
-        category: "denim",
-        material: "matDenim",
-        size: "32 x 30",
-        colorName: "Indigo Blue",
-        colorHex: "#2b4c7e",
-        priceInRupees: 4800,
-        imagePath: "/products/denim_jeans_blue.png",
-        chestInch: "N/A",
-        lengthInch: "30\" (inseam)",
-        shoulderInch: "N/A",
-        condition: "condVeryGood",
-        hotness: 4
-    },
-    {
-        sku: "prod-2-28-blue",
-        parentProductId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12",
-        name: "Classic Denim 501 Jeans",
-        description: "Hard-to-find vintage wash Levi's 501s with premium straight-leg fit and copper rivets.",
-        brand: "Levi's (Curated)",
-        year: "1988",
-        category: "denim",
-        material: "matDenim",
-        size: "28 x 30",
-        colorName: "Indigo Blue",
-        colorHex: "#2b4c7e",
-        priceInRupees: 4700,
-        imagePath: "/products/denim_jeans_blue.png",
-        chestInch: "N/A",
-        lengthInch: "30\" (inseam)",
-        shoulderInch: "N/A",
-        condition: "condExcellent",
-        hotness: 4
-    },
-    {
-        sku: "prod-2-34-blue",
-        parentProductId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12",
-        name: "Classic Denim 501 Jeans",
-        description: "Hard-to-find vintage wash Levi's 501s with premium straight-leg fit and copper rivets.",
-        brand: "Levi's (Curated)",
-        year: "1988",
-        category: "denim",
-        material: "matDenim",
-        size: "34 x 32",
-        colorName: "Indigo Blue",
-        colorHex: "#2b4c7e",
-        priceInRupees: 4900,
-        imagePath: "/products/denim_jeans_blue.png",
-        chestInch: "N/A",
-        lengthInch: "32\" (inseam)",
-        shoulderInch: "N/A",
-        condition: "condGood",
-        hotness: 3
-    },
-    {
-        sku: "prod-2-30-black",
-        parentProductId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12",
-        name: "Classic Denim 501 Jeans",
-        description: "Hard-to-find vintage wash Levi's 501s with premium straight-leg fit and copper rivets.",
-        brand: "Levi's (Curated)",
-        year: "1988",
-        category: "denim",
-        material: "matDenim",
-        size: "30 x 32",
-        colorName: "Washed Black",
-        colorHex: "#424242",
-        priceInRupees: 4600,
-        imagePath: "/products/denim_jeans_black.png",
-        chestInch: "N/A",
-        lengthInch: "32\" (inseam)",
-        shoulderInch: "N/A",
-        condition: "condExcellent",
-        hotness: 5
-    },
-    {
-        sku: "prod-2-32-black",
-        parentProductId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12",
-        name: "Classic Denim 501 Jeans",
-        description: "Hard-to-find vintage wash Levi's 501s with premium straight-leg fit and copper rivets.",
-        brand: "Levi's (Curated)",
-        year: "1988",
-        category: "denim",
-        material: "matDenim",
-        size: "32 x 32",
-        colorName: "Washed Black",
-        colorHex: "#424242",
-        priceInRupees: 4750,
-        imagePath: "/products/denim_jeans_black.png",
-        chestInch: "N/A",
-        lengthInch: "32\" (inseam)",
-        shoulderInch: "N/A",
-        condition: "condVeryGood",
-        hotness: 4
-    },
-    // Product 3
-    {
-        id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13",
-        sku: "prod-3-M-brown",
-        parentProductId: null,
-        name: "Corduroy Worker Shirt",
-        description: "Ultra-durable, premium wale corduroy button-up with chest utility flap pockets.",
-        brand: "Carhartt WIP",
-        year: "1997",
-        category: "knits",
-        material: "matCorduroy",
-        size: "M",
-        colorName: "Dusty Brown",
-        colorHex: "#bcaaa4",
-        priceInRupees: 3900,
-        imagePath: "/products/worker_shirt_brown.png",
-        chestInch: "21\"",
-        lengthInch: "28\"",
-        shoulderInch: "18\"",
-        condition: "condVeryGood",
-        hotness: 4
-    },
-    {
-        sku: "prod-3-L-tan",
-        parentProductId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13",
-        name: "Corduroy Worker Shirt",
-        description: "Ultra-durable, premium wale corduroy button-up with chest utility flap pockets.",
-        brand: "Carhartt WIP",
-        year: "1997",
-        category: "knits",
-        material: "matCorduroy",
-        size: "L",
-        colorName: "Tan Cord",
-        colorHex: "#d7ccc8",
-        priceInRupees: 4100,
-        imagePath: "/products/worker_shirt_tan.png",
-        chestInch: "22.5\"",
-        lengthInch: "29\"",
-        shoulderInch: "19\"",
-        condition: "condGood",
-        hotness: 3
-    },
-    // Product 4
-    {
-        id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14",
-        sku: "prod-4-30-olive",
-        parentProductId: null,
-        name: "Military Cargo Pants",
-        description: "Eight-pocket utility military cargo trousers with adjustable drawstring waist and cuffs.",
-        brand: "Rothco Vintage",
-        year: "1992",
-        category: "cargo",
-        material: "matCotton",
-        size: "30 x 32",
-        colorName: "Olive Green",
-        colorHex: "#4e5d44",
-        priceInRupees: 4400,
-        imagePath: "/products/cargo_pants_olive.png",
-        chestInch: "N/A",
-        lengthInch: "32\" (inseam)",
-        shoulderInch: "N/A",
-        condition: "condGood",
-        hotness: 3
-    },
-    {
-        sku: "prod-4-32-khaki",
-        parentProductId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14",
-        name: "Military Cargo Pants",
-        description: "Eight-pocket utility military cargo trousers with adjustable drawstring waist and cuffs.",
-        brand: "Rothco Vintage",
-        year: "1992",
-        category: "cargo",
-        material: "matCotton",
-        size: "32 x 30",
-        colorName: "Khaki Tan",
-        colorHex: "#c2b280",
-        priceInRupees: 4500,
-        imagePath: "/products/cargo_pants_khaki.png",
-        chestInch: "N/A",
-        lengthInch: "30\" (inseam)",
-        shoulderInch: "N/A",
-        condition: "condVeryGood",
-        hotness: 4
-    },
-    // Product 5
-    {
-        id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a15",
-        sku: "prod-5-XL-green",
-        parentProductId: null,
-        name: "90s Retro Sport Tee",
-        description: "Authentic single-stitch sportswear athletic t-shirt with classic swoosh embroidery.",
-        brand: "Nike Vintage",
-        year: "1996",
-        category: "tees",
-        material: "matCotton",
-        size: "XL",
-        colorName: "Forest Green",
-        colorHex: "#009688",
-        priceInRupees: 3200,
-        imagePath: "/products/sport_tee_green.png",
-        chestInch: "24\"",
-        lengthInch: "31\"",
-        shoulderInch: "21\"",
-        condition: "condExcellent",
-        hotness: 4
-    },
-    {
-        sku: "prod-5-L-grey",
-        parentProductId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a15",
-        name: "90s Retro Sport Tee",
-        description: "Authentic single-stitch sportswear athletic t-shirt with classic swoosh embroidery.",
-        brand: "Nike Vintage",
-        year: "1996",
-        category: "tees",
-        material: "matCotton",
-        size: "L",
-        colorName: "Heather Grey",
-        colorHex: "#9e9e9e",
-        priceInRupees: 2900,
-        imagePath: "/products/sport_tee_grey.png",
-        chestInch: "22\"",
-        lengthInch: "30\"",
-        shoulderInch: "19.5\"",
-        condition: "condVeryGood",
-        hotness: 3
-    },
-    // Product 6
-    {
-        id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a16",
-        sku: "prod-6-L-indigo",
-        parentProductId: null,
-        name: "Heavyweight Denim Jacket",
-        description: "Classic 80s blanket-lined indigo denim jacket with brass buttons and dual chest pockets.",
-        brand: "Wrangler Heavyweight",
-        year: "1985",
-        category: "denim",
-        material: "matDenim",
-        size: "L",
-        colorName: "Classic Indigo",
-        colorHex: "#3f51b5",
-        priceInRupees: 5500,
-        imagePath: "/products/denim_jacket_indigo.png",
-        chestInch: "23\"",
-        lengthInch: "26\" (jacket)",
-        shoulderInch: "20\"",
-        condition: "condVeryGood",
-        hotness: 5
-    },
-    {
-        sku: "prod-6-M-stonewash",
-        parentProductId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a16",
-        name: "Heavyweight Denim Jacket",
-        description: "Classic 80s blanket-lined indigo denim jacket with brass buttons and dual chest pockets.",
-        brand: "Wrangler Heavyweight",
-        year: "1985",
-        category: "denim",
-        material: "matDenim",
-        size: "M",
-        colorName: "Stonewash Blue",
-        colorHex: "#7986cb",
-        priceInRupees: 5200,
-        imagePath: "/products/denim_jacket_stonewash.png",
-        chestInch: "21\"",
-        lengthInch: "25\" (jacket)",
-        shoulderInch: "19\"",
-        condition: "condGood",
-        hotness: 4
-    },
-    // Product 7
-    {
-        id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a17",
-        sku: "prod-7-L-pink",
-        parentProductId: null,
-        name: "Vintage Knit Cardigan",
-        description: "70s style cable-knit button cardigan crafted from organic wool for maximum cozy comfort.",
-        brand: "Sears Vintage",
-        year: "1974",
-        category: "knits",
-        material: "matWool",
-        size: "L",
-        colorName: "Vintage Rose",
-        colorHex: "#e91e63",
-        priceInRupees: 4900,
-        imagePath: "/products/knit_cardigan_pink.png",
-        chestInch: "22\"",
-        lengthInch: "27\"",
-        shoulderInch: "19\"",
-        condition: "condGood",
-        hotness: 3
-    },
-    {
-        sku: "prod-7-M-cream",
-        parentProductId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a17",
-        name: "Vintage Knit Cardigan",
-        description: "70s style cable-knit button cardigan crafted from organic wool for maximum cozy comfort.",
-        brand: "Sears Vintage",
-        year: "1974",
-        category: "knits",
-        material: "matWool",
-        size: "M",
-        colorName: "Cream Knit",
-        colorHex: "#f5f5f5",
-        priceInRupees: 4700,
-        imagePath: "/products/worker_shirt_tan.png",
-        chestInch: "20\"",
-        lengthInch: "26\"",
-        shoulderInch: "18\"",
-        condition: "condVeryGood",
-        hotness: 4
-    },
-    // Product 8
-    {
-        id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a18",
-        sku: "prod-8-M-purple",
-        parentProductId: null,
-        name: "Synchilla Fleece Sweater",
-        description: "90s classic snap-T pullover fleece jacket featuring contrast color blocking.",
-        brand: "Patagonia Synchilla",
-        year: "1995",
-        category: "cargo",
-        material: "matFleece",
-        size: "M",
-        colorName: "Grape Purple",
-        colorHex: "#9c27b0",
-        priceInRupees: 6200,
-        imagePath: "/products/worker_shirt_brown.png",
-        chestInch: "21.5\"",
-        lengthInch: "27.5\"",
-        shoulderInch: "18.5\"",
-        condition: "condExcellent",
-        hotness: 5
-    },
-    {
-        sku: "prod-8-L-black",
-        parentProductId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a18",
-        name: "Synchilla Fleece Sweater",
-        description: "90s classic snap-T pullover fleece jacket featuring contrast color blocking.",
-        brand: "Patagonia Synchilla",
-        year: "1995",
-        category: "cargo",
-        material: "matFleece",
-        size: "L",
-        colorName: "Obsidian Black",
-        colorHex: "#111111",
-        priceInRupees: 6500,
-        imagePath: "/products/vintage_tee_black.png",
-        chestInch: "23\"",
-        lengthInch: "29\"",
-        shoulderInch: "20\"",
-        condition: "condExcellent",
-        hotness: 4
-    },
-    // Product 9
-    {
-        id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a19",
-        sku: "prod-9-M-black",
-        parentProductId: null,
-        name: "Nirvana Tour Tee",
-        description: "Extremely rare 1993 tour graphic tee with classic smiley face distressed print.",
-        brand: "Nirvana Tour Tee",
-        year: "1993",
-        category: "tees",
-        material: "matCotton",
-        size: "M",
-        colorName: "Faded Black",
-        colorHex: "#212121",
-        priceInRupees: 3800,
-        imagePath: "/products/vintage_tee_black.png",
-        chestInch: "20\"",
-        lengthInch: "28\"",
-        shoulderInch: "18\"",
-        condition: "condVeryGood",
-        hotness: 5
-    },
-    {
-        sku: "prod-9-L-charcoal",
-        parentProductId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a19",
-        name: "Nirvana Tour Tee",
-        description: "Extremely rare 1993 tour graphic tee with classic smiley face distressed print.",
-        brand: "Nirvana Tour Tee",
-        year: "1993",
-        category: "tees",
-        material: "matCotton",
-        size: "L",
-        colorName: "Charcoal Grey",
-        colorHex: "#37474f",
-        priceInRupees: 4100,
-        imagePath: "/products/sport_tee_grey.png",
-        chestInch: "22\"",
-        lengthInch: "29.5\"",
-        shoulderInch: "19.5\"",
-        condition: "condExcellent",
-        hotness: 4
-    },
-    // Product 10
-    {
-        id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a1a",
-        sku: "prod-10-30-brown",
-        parentProductId: null,
-        name: "Washed Slim Fit Jeans",
-        description: "Classic straight fit denim jeans with a natural distressed wash finish.",
-        brand: "Lee Riders",
-        year: "1991",
-        category: "denim",
-        material: "matDenim",
-        size: "30 x 32",
-        colorName: "Earth Brown",
-        colorHex: "#795548",
-        priceInRupees: 4200,
-        imagePath: "/products/worker_shirt_brown.png",
-        chestInch: "N/A",
-        lengthInch: "32\" (inseam)",
-        shoulderInch: "N/A",
-        condition: "condGood",
-        hotness: 3
-    },
-    {
-        sku: "prod-10-32-blue",
-        parentProductId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a1a",
-        name: "Washed Slim Fit Jeans",
-        description: "Classic straight fit denim jeans with a natural distressed wash finish.",
-        brand: "Lee Riders",
-        year: "1991",
-        category: "denim",
-        material: "matDenim",
-        size: "32 x 30",
-        colorName: "Standard Blue",
-        colorHex: "#5c6bc0",
-        priceInRupees: 4400,
-        imagePath: "/products/denim_jeans_blue.png",
-        chestInch: "N/A",
-        lengthInch: "30\" (inseam)",
-        shoulderInch: "N/A",
-        condition: "condVeryGood",
-        hotness: 4
-    },
-    // Product 11
-    {
-        id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a1b",
-        sku: "prod-11-XL-grey",
-        parentProductId: null,
-        name: "Polo Knit Pullover",
-        description: "Premium cable-knit cotton pullover sweater featuring signature brand embroidery.",
-        brand: "Polo Ralph Lauren",
-        year: "1992",
-        category: "knits",
-        material: "matWool",
-        size: "XL",
-        colorName: "Steel Grey",
-        colorHex: "#607d8b",
-        priceInRupees: 5200,
-        imagePath: "/products/sport_tee_grey.png",
-        chestInch: "25\"",
-        lengthInch: "30\"",
-        shoulderInch: "22\"",
-        condition: "condExcellent",
-        hotness: 4
-    },
-    {
-        sku: "prod-11-L-navy",
-        parentProductId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a1b",
-        name: "Polo Knit Pullover",
-        description: "Premium cable-knit cotton pullover sweater featuring signature brand embroidery.",
-        brand: "Polo Ralph Lauren",
-        year: "1992",
-        category: "knits",
-        material: "matWool",
-        size: "L",
-        colorName: "Navy Blue",
-        colorHex: "#1a237e",
-        priceInRupees: 4950,
-        imagePath: "/products/denim_jeans_blue.png",
-        chestInch: "23\"",
-        lengthInch: "28.5\"",
-        shoulderInch: "20\"",
-        condition: "condVeryGood",
-        hotness: 3
-    },
-    // Product 12
-    {
-        id: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a1c",
-        sku: "prod-12-L-cyan",
-        parentProductId: null,
-        name: "Retro Sport Windbreaker",
-        description: "90s color-blocked lightweight nylon packable windbreaker jacket with zip pockets.",
-        brand: "Columbia Sportswear",
-        year: "1990",
-        category: "cargo",
-        material: "matNylon",
-        size: "L",
-        colorName: "Aqua Cyan",
-        colorHex: "#00bcd4",
-        priceInRupees: 3700,
-        imagePath: "/products/vintage_tee_orange.png",
-        chestInch: "23\"",
-        lengthInch: "28\"",
-        shoulderInch: "20\"",
-        condition: "condVeryGood",
-        hotness: 4
-    },
-    {
-        sku: "prod-12-M-navy",
-        parentProductId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a1c",
-        name: "Retro Sport Windbreaker",
-        description: "90s color-blocked lightweight nylon packable windbreaker jacket with zip pockets.",
-        brand: "Columbia Sportswear",
-        year: "1990",
-        category: "cargo",
-        material: "matNylon",
-        size: "M",
-        colorName: "Navy Blue",
-        colorHex: "#0d47a1",
-        priceInRupees: 3500,
-        imagePath: "/products/denim_jacket_indigo.png",
-        chestInch: "21\"",
-        lengthInch: "27\"",
-        shoulderInch: "18.5\"",
-        condition: "condGood",
-        hotness: 3
-    }
-];
+function hashPassword(password) {
+  return crypto.pbkdf2Sync(password, "next_dot_in_salt", 1000, 64, "sha512").toString("hex");
+}
 
 async function main() {
-    console.log("Starting database seeding...");
-    for (const p of PRODUCTS_TO_SEED) {
-        try {
-            await prisma.product.upsert({
-                where: { sku: p.sku },
-                update: p,
-                create: p,
-            });
-            console.log(`Successfully seeded SKU: ${p.sku}`);
-        } catch (err) {
-            console.error(`Failed to seed SKU: ${p.sku}`, err);
-        }
-    }
-    console.log("Database seeding finished.");
+  console.log("Seeding initial database & demo items with images...");
+
+  const adminEmail = "admin@next.in";
+  let admin = await prisma.user.findUnique({ where: { email: adminEmail } });
+  if (!admin) {
+    admin = await prisma.user.create({
+      data: {
+        email: adminEmail,
+        name: "Store Admin",
+        passwordHash: hashPassword(process.env.ADMIN_PASSWORD || "admin123"),
+        role: "ADMIN",
+      },
+    });
+  }
+
+  const masterEmail = "master@next.in";
+  let master = await prisma.user.findUnique({ where: { email: masterEmail } });
+  if (!master) {
+    master = await prisma.user.create({
+      data: {
+        email: masterEmail,
+        name: "Master Admin",
+        passwordHash: hashPassword(process.env.ADMIN_PASSWORD || "admin123"),
+        role: "MASTER_ADMIN",
+      },
+    });
+  }
+
+  // Seed Categories
+  const catTees = await prisma.category.upsert({
+    where: { slug: "t-shirts" },
+    update: {},
+    create: { name: "T-Shirts", slug: "t-shirts", description: "Casual & graphic tees" },
+  });
+
+  const catDenim = await prisma.category.upsert({
+    where: { slug: "jeans-denim" },
+    update: {},
+    create: { name: "Jeans & Denim", slug: "jeans-denim", description: "Classic & relaxed fit denim" },
+  });
+
+  const catSneakers = await prisma.category.upsert({
+    where: { slug: "sneakers" },
+    update: {},
+    create: { name: "Sneakers", slug: "sneakers", description: "Footwear & kicks" },
+  });
+
+  // Seed Products with generated image paths
+  const demoProducts = [
+    {
+      name: "Essential Heavyweight Oversized Tee",
+      slug: "essential-heavyweight-oversized-tee",
+      description: "Crafted from 280GSM heavy combed cotton with relaxed shoulders and a structured fit.",
+      price: 1499,
+      compareAtPrice: 1999,
+      barcode: "SKU-TEE-001",
+      stock: 25,
+      categoryId: catTees.id,
+      images: ["/tshirt_product_sample_1785257457017.png"],
+      isFeatured: true,
+      isPublished: true,
+    },
+    {
+      name: "Relaxed Fit Indigo Selvedge Denim",
+      slug: "relaxed-fit-indigo-selvedge-denim",
+      description: "Custom dark indigo wash denim featuring Japanese selvedge detailing and reinforced stitching.",
+      price: 3499,
+      compareAtPrice: 4299,
+      barcode: "SKU-DNM-002",
+      stock: 12,
+      categoryId: catDenim.id,
+      images: ["/denim_product_sample_1785257473858.png"],
+      isFeatured: true,
+      isPublished: true,
+    },
+    {
+      name: "Monochrome Low-Top Leather Kicks",
+      slug: "monochrome-low-top-leather-kicks",
+      description: "Minimalist black and white full-grain leather sneakers with cushioned soles and tonal laces.",
+      price: 4999,
+      compareAtPrice: 5999,
+      barcode: "SKU-SNK-003",
+      stock: 8,
+      categoryId: catSneakers.id,
+      images: ["/sneakers_product_sample_1785257488411.png"],
+      isFeatured: true,
+      isPublished: true,
+    },
+  ];
+
+  for (const p of demoProducts) {
+    await prisma.product.upsert({
+      where: { slug: p.slug },
+      update: { images: p.images, isFeatured: true, isPublished: true },
+      create: p,
+    });
+  }
+
+  console.log("Seeding with images completed successfully!");
 }
 
 main()
-    .catch((e) => {
-        console.error(e);
-        process.exit(1);
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
-    });
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

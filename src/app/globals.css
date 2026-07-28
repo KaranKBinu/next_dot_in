@@ -3,100 +3,53 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #111115;
+  --background: #FAFAF8;
+  --foreground: #111827;
+  --surface: #FFFFFF;
+  --surface-subtle: #F4F4F0;
+  --border: #E7E5E4;
+  --border-strong: #D6D3D1;
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
+  --text-muted: #9CA3AF;
+  --accent: #18181B; /* Refined Charcoal / Black */
+  --accent-hover: #27272A;
 }
 
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-devanagari-var: var(--font-devanagari);
-  --font-malayalam-var: var(--font-malayalam);
+  --font-sans: var(--font-geist-sans), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
 
-  /* Primary Accent Theme (Shiny Blue) */
-  --color-primary-50: #f0f6ff;
-  --color-primary-100: #e0ecff;
-  --color-primary-200: #c7dfff;
-  --color-primary-300: #9ecaff;
-  --color-primary-400: #6ba7ff;
-  --color-primary-500: #1e7cff;
-  --color-primary-600: #005ae6;
-  --color-primary-700: #0045b3;
-  --color-primary-800: #003180;
-  --color-primary-900: #001e4d;
-  --color-primary-950: #000f26;
+  /* Custom Warm Neutral Theme */
+  --color-canvas: #FAFAF8;
+  --color-surface: #FFFFFF;
+  --color-surface-subtle: #F4F4F0;
+  --color-border: #E7E5E4;
+  --color-border-strong: #D6D3D1;
 
-  /* Enhanced Neutral Gray Theme for Light Mode (High-Contrast, Deep Charcoal Typography) */
-  --color-neutral-50: #f9f9fb;
-  --color-neutral-100: #f1f1f5;
-  --color-neutral-200: #e4e4eb;
-  --color-neutral-300: #a3a3b0;
-  --color-neutral-400: #6b6b77;
-  --color-neutral-500: #44444f;
-  --color-neutral-600: #2b2b32;
-  --color-neutral-700: #1c1c20;
-  --color-neutral-800: #141416;
-  --color-neutral-900: #08080a;
-  --color-neutral-950: #000000;
-
-  /* Pronounced tactile shadows to prevent the UI from looking fragile */
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.12), 0 1px 2px -1px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 14px -2px rgba(0, 0, 0, 0.14), 0 2px 8px -2px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 28px -4px rgba(0, 0, 0, 0.18), 0 8px 16px -4px rgba(0, 0, 0, 0.12);
-  --shadow-xl: 0 20px 42px -6px rgba(0, 0, 0, 0.24), 0 12px 24px -6px rgba(0, 0, 0, 0.16);
-}
-
-.dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-
-  /* Revert to standard zinc grays for Dark Mode to maintain soft dark aesthetic */
-  --color-neutral-50: #fafafa;
-  --color-neutral-100: #f4f4f5;
-  --color-neutral-200: #e4e4e7;
-  --color-neutral-300: #d4d4d8;
-  --color-neutral-400: #a1a1aa;
-  --color-neutral-500: #71717a;
-  --color-neutral-600: #52525b;
-  --color-neutral-700: #3f3f46;
-  --color-neutral-800: #27272a;
-  --color-neutral-900: #18181b;
-  --color-neutral-950: #09090b;
+  --color-primary: #111827;
+  --color-secondary: #6B7280;
+  --color-muted: #9CA3AF;
+  --color-accent: #18181B;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-  font-weight: 500; /* Makes body typography slightly bolder and less fragile */
+  font-family: var(--font-sans);
+  font-weight: 450;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Ensure headings have solid, confident weights */
 h1, h2, h3, h4, h5, h6 {
-  font-weight: 750;
-  letter-spacing: -0.02em;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  color: var(--text-primary);
 }
 
-/* ── Locale-aware typography ────────────────────────────────────────────────
-   Switch the primary font stack when the user picks Hindi or Malayalam.
-   data-locale is set synchronously on <html> by NavbarContext on locale change.
-── */
-
-/* Hindi — Devanagari script via Noto Sans Devanagari */
-[data-locale="hi"] body {
-  font-family: var(--font-devanagari), ui-sans-serif, system-ui, sans-serif;
-}
-
-/* Malayalam script via Noto Sans Malayalam */
-[data-locale="ml"] body {
-  font-family: var(--font-malayalam), ui-sans-serif, system-ui, sans-serif;
-}
-
-/* Ensure inputs, buttons, and form items look crisp and robust */
 input, select, textarea, button {
-  font-weight: 500;
+  font-weight: 450;
 }

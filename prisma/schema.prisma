@@ -1,63 +1,192 @@
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
-
-
-model Order {
-  id              String      @id
-  date            DateTime    @default(now())
-  name            String
-  phone           String
-  address         String
-  pincode         String
-  total           Int
-  utr             String
-  reservationCode String
-  paymentStatus   String      @default("pending") // "pending" | "verified"
-  directBuy       Boolean     @default(false)
-  items           OrderItem[]
+enum Role {
+  CUSTOMER
+  ADMIN
+  MASTER_ADMIN
 }
 
-model OrderItem {
-  id            String @id @default(uuid())
-  orderId       String
-  order         Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  sku           String
-  nameKey       String
-  brand         String
-  size          String
-  colorName     String
-  priceInRupees Int
-  imagePath     String
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  name         String?
+  passwordHash String
+  role         Role       @default(CUSTOMER)
+  phone        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  addresses    Address[]
+  orders       Order[]
+  wishlists    Wishlist[]
+  reviews      Review[]
+
+  @@map("users")
+}
+
+model Address {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName     String
+  street       String
+  city         String
+  state        String
+  pincode      String
+  country      String   @default("India")
+  phone        String
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@map("addresses")
+}
+
+model Category {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  slug        String     @unique
+  description String?
+  image       String?
+  parentId    String?
+  parent      Category?  @relation("SubCategories", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Category[] @relation("SubCategories")
+  attributes  Json?      // e.g. ["Size", "Color", "Fabric", "Fit"]
+  createdAt   DateTime   @default(now())
+
+  products    Product[]
+
+  @@map("categories")
 }
 
 model Product {
-  id              String   @id @default(uuid())
-  parentProductId String?
-  sku             String   @unique
-  name            String
-  description     String
-  brand           String
-  year            String
-  category        String   // "tees" | "denim" | "knits" | "cargo"
-  material        String
-  size            String
-  colorName       String
-  colorHex        String
-  priceInRupees   Int
-  imagePath       String   @db.Text
-  chestInch       String
-  lengthInch      String
-  shoulderInch    String
-  condition       String   // "condExcellent" | "condVeryGood" | "condGood"
-  hotness         Int      @default(3)
-  isActive        Boolean  @default(true)
-  stockQuantity   Int      @default(1)
-  createdAt       DateTime @default(now())
+  id             String      @id @default(uuid())
+  name           String
+  slug           String      @unique
+  brand          String?
+  description    String      @db.Text
+  price          Int         // Stored in INR rupees
+  compareAtPrice Int?
+  barcode        String?     // Optional barcode / SKU
+  stock          Int         @default(0)
+  lowStockThreshold Int      @default(5)
+  images         String[]
+  attributes     Json?       // Dynamic attributes KV (e.g. { size: "L", color: "Black", fabric: "Cotton" })
+  tags           String[]    // Array of search/style tags
+  isFeatured     Boolean     @default(false)
+  isPublished    Boolean     @default(true)
+  categoryId     String
+  category       Category    @relation(fields: [categoryId], references: [id])
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  orderItems     OrderItem[]
+  wishlists      Wishlist[]
+  reviews        Review[]
+
+  @@map("products")
 }
 
+model Order {
+  id                String      @id @default(uuid())
+  orderNumber       String      @unique
+  userId            String?
+  user              User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guestEmail        String?
+  guestName         String?
+  guestPhone        String?
+  totalAmount       Int
+  discountAmount    Int         @default(0)
+  couponCode        String?
+  status            OrderStatus @default(PENDING)
+  razorpayOrderId   String?     @unique
+  razorpayPaymentId String?
+  shippingAddress   Json
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  items             OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  name      String
+  price     Int
+  quantity  Int
+  image     String?
+
+  @@map("order_items")
+}
+
+model Wishlist {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@map("wishlists")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@map("reviews")
+}
+
+model Coupon {
+  id             String       @id @default(uuid())
+  code           String       @unique
+  discountType   DiscountType
+  value          Int
+  minOrderAmount Int          @default(0)
+  expiresAt      DateTime?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+
+  @@map("coupons")
+}
+
+model SystemSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
+}

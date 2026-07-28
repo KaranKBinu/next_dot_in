@@ -1,16 +1,14 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
+import { Pool } from "@neondatabase/serverless";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-// Safe fallback connection URL during static compilation or local checks
-const connectionString = 
-  process.env.DATABASE_URL || 
-  "postgresql://postgres:postgres@localhost:5432/placeholder_db?schema=public";
-
-const adapter = new PrismaNeon({ connectionString });
+const connectionString = process.env.DATABASE_URL;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaNeon(pool);
 
 export const prisma =
   globalForPrisma.prisma ??

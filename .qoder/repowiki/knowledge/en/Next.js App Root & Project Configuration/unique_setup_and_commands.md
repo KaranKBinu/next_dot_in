@@ -1,1 +1,0 @@
-Requires `DATABASE_URL` env var (defaults to local PostgreSQL `postgresql://postgres:postgres@localhost:5432/next_in_db?schema=public`) and `ADMIN_SESSION_TOKEN` / `ADMIN_PASSWORD` for the admin guard; seeding runs via `npx prisma db seed` which executes `node prisma/seed.js`.
