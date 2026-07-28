@@ -1,7 +1,7 @@
 import { getCurrentSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import FavoritesClientView from "@/components/FavoritesClientView";
+import FavoritesClientView from "../../../components/FavoritesClientView";
 
 export default async function FavoritesPage() {
   const session = await getCurrentSession();
