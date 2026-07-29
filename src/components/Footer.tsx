@@ -71,10 +71,6 @@ export default function Footer() {
       {/* Bottom Bar */}
       <div className="max-w-7xl mx-auto px-6 sm:px-8 mt-12 pt-8 border-t border-[#E7E5E4] flex flex-col sm:flex-row items-center justify-between text-xs text-[#9CA3AF] gap-4">
         <span>&copy; {new Date().getFullYear()} NEXT.IN. All rights reserved.</span>
-        <div className="flex items-center gap-4 text-[11px]">
-          <span className="flex items-center gap-1"><Lock className="w-3.5 h-3.5" /> 256-Bit SSL Encryption</span>
-          <span className="flex items-center gap-1"><CreditCard className="w-3.5 h-3.5" /> Razorpay Verified</span>
-        </div>
       </div>
     </footer>
   );
