@@ -40,9 +40,15 @@ export async function createProductAction(data: {
   try {
     const slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "") + "-" + Date.now();
 
-    // Resolve categoryId to an actual category record
+    // Resolve categoryId to an actual category record by ID, Name, or Slug
     let category = await prisma.category.findFirst({
-      where: { id: data.categoryId },
+      where: {
+        OR: [
+          { id: data.categoryId },
+          { name: { equals: data.categoryId, mode: "insensitive" } },
+          { slug: { equals: data.categoryId, mode: "insensitive" } },
+        ],
+      },
     });
 
     if (!category) {

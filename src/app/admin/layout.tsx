@@ -35,9 +35,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <FolderPlus className="w-4 h-4 text-[#111827]" /> Categories & Attributes
             </Link>
 
-            <Link href="/admin/inventory" className="flex items-center gap-3 px-3 py-2 text-[#6B7280] rounded-md hover:bg-[#F4F4F0] hover:text-[#111827] transition-colors">
-              <Layers className="w-4 h-4 text-[#111827]" /> Simplified Inventory
-            </Link>
+
 
             <Link href="/admin/orders" className="flex items-center gap-3 px-3 py-2 text-[#6B7280] rounded-md hover:bg-[#F4F4F0] hover:text-[#111827] transition-colors">
               <ShoppingCart className="w-4 h-4 text-[#111827]" /> Orders

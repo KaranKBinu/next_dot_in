@@ -68,7 +68,11 @@ export default async function AdminDashboardPage() {
         ) : (
           <div className="divide-y divide-[#E7E5E4]">
             {orders.map((o) => (
-              <div key={o.id} className="py-3 flex items-center justify-between text-xs">
+              <Link
+                key={o.id}
+                href={`/admin/orders?id=${o.id}`}
+                className="py-3 flex items-center justify-between text-xs hover:bg-[#FAFAF8] px-2 rounded transition-colors block"
+              >
                 <div>
                   <span className="font-mono font-bold text-[#111827]">{o.orderNumber}</span>
                   <p className="text-[11px] text-[#6B7280] mt-0.5">{new Date(o.createdAt).toLocaleString()}</p>
@@ -79,7 +83,7 @@ export default async function AdminDashboardPage() {
                   </span>
                   <span className="font-bold text-[#111827]">₹{o.totalAmount}</span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

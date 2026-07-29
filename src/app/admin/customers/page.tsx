@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import Link from "next/link";
 
 export default async function AdminCustomersPage() {
   const customers = await prisma.user.findMany({
@@ -27,6 +28,7 @@ export default async function AdminCustomersPage() {
                 <th className="px-6 py-3">Email</th>
                 <th className="px-6 py-3">Orders Placed</th>
                 <th className="px-6 py-3">Joined Date</th>
+                <th className="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E7E5E4]">
@@ -36,6 +38,14 @@ export default async function AdminCustomersPage() {
                   <td className="px-6 py-3.5 text-[#6B7280]">{c.email}</td>
                   <td className="px-6 py-3.5 font-bold">{c.orders.length}</td>
                   <td className="px-6 py-3.5 text-[#6B7280]">{new Date(c.createdAt).toLocaleDateString()}</td>
+                  <td className="px-6 py-3.5 text-right">
+                    <Link
+                      href={`/admin/customers/${c.id}`}
+                      className="px-3 py-1 bg-[#FAFAF8] hover:bg-[#F4F4F0] text-[#111827] border border-[#E7E5E4] rounded text-[10px] font-semibold uppercase tracking-wider"
+                    >
+                      View CRM Profile
+                    </Link>
+                  </td>
                 </tr>
               ))}
             </tbody>
