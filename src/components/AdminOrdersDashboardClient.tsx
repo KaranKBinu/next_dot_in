@@ -148,55 +148,55 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
       {notice && (
         <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold rounded-md flex justify-between items-center">
           <span>{notice}</span>
-          <button onClick={() => setNotice(null)} className="font-bold">Dismiss</button>
+          <button onClick={() => setNotice(null)} className="font-bold min-h-[44px] min-w-[44px] flex items-center justify-center">Dismiss</button>
         </div>
       )}
 
       {/* Top Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 print:hidden">
-        <div className="bg-white border border-[#E7E5E4] rounded-md p-3.5 space-y-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Total Orders</span>
-          <p className="text-lg font-bold text-[#111827]">{totalOrders}</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 sm:gap-3 print:hidden">
+        <div className="bg-white border border-[#E7E5E4] rounded-xl p-3 sm:p-3.5 space-y-1">
+          <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Total Orders</span>
+          <p className="text-base sm:text-lg font-bold text-[#111827]">{totalOrders}</p>
         </div>
 
-        <div className="bg-white border border-[#E7E5E4] rounded-md p-3.5 space-y-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Pending</span>
-          <p className="text-lg font-bold text-amber-700">{pendingCount}</p>
+        <div className="bg-white border border-[#E7E5E4] rounded-xl p-3 sm:p-3.5 space-y-1">
+          <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Pending</span>
+          <p className="text-base sm:text-lg font-bold text-amber-700">{pendingCount}</p>
         </div>
 
-        <div className="bg-white border border-[#E7E5E4] rounded-md p-3.5 space-y-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Processing</span>
-          <p className="text-lg font-bold text-blue-700">{processingCount}</p>
+        <div className="bg-white border border-[#E7E5E4] rounded-xl p-3 sm:p-3.5 space-y-1">
+          <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Processing</span>
+          <p className="text-base sm:text-lg font-bold text-blue-700">{processingCount}</p>
         </div>
 
-        <div className="bg-white border border-[#E7E5E4] rounded-md p-3.5 space-y-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Shipped</span>
-          <p className="text-lg font-bold text-indigo-700">{shippedCount}</p>
+        <div className="bg-white border border-[#E7E5E4] rounded-xl p-3 sm:p-3.5 space-y-1">
+          <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Shipped</span>
+          <p className="text-base sm:text-lg font-bold text-indigo-700">{shippedCount}</p>
         </div>
 
-        <div className="bg-white border border-[#E7E5E4] rounded-md p-3.5 space-y-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Delivered</span>
-          <p className="text-lg font-bold text-emerald-700">{deliveredCount}</p>
+        <div className="bg-white border border-[#E7E5E4] rounded-xl p-3 sm:p-3.5 space-y-1">
+          <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Delivered</span>
+          <p className="text-base sm:text-lg font-bold text-emerald-700">{deliveredCount}</p>
         </div>
 
-        <div className="bg-white border border-[#E7E5E4] rounded-md p-3.5 space-y-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Cancelled</span>
-          <p className="text-lg font-bold text-rose-700">{cancelledCount}</p>
+        <div className="bg-white border border-[#E7E5E4] rounded-xl p-3 sm:p-3.5 space-y-1">
+          <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Cancelled</span>
+          <p className="text-base sm:text-lg font-bold text-rose-700">{cancelledCount}</p>
         </div>
 
-        <div className="bg-white border border-[#E7E5E4] rounded-md p-3.5 space-y-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Today</span>
-          <p className="text-lg font-bold text-[#111827]">{todayOrders.length}</p>
+        <div className="bg-white border border-[#E7E5E4] rounded-xl p-3 sm:p-3.5 space-y-1">
+          <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Today</span>
+          <p className="text-base sm:text-lg font-bold text-[#111827]">{todayOrders.length}</p>
         </div>
 
-        <div className="bg-white border border-[#E7E5E4] rounded-md p-3.5 space-y-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Revenue Today</span>
-          <p className="text-lg font-bold text-[#111827]">₹{revenueToday}</p>
+        <div className="bg-white border border-[#E7E5E4] rounded-xl p-3 sm:p-3.5 space-y-1">
+          <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Revenue Today</span>
+          <p className="text-base sm:text-lg font-bold text-[#111827]">₹{revenueToday}</p>
         </div>
       </div>
 
       {/* Toolbar */}
-      <div className="bg-white border border-[#E7E5E4] rounded-md p-4 flex flex-col sm:flex-row items-center justify-between gap-3 print:hidden">
+      <div className="bg-white border border-[#E7E5E4] rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 print:hidden">
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Search className="w-4 h-4 text-[#9CA3AF]" />
           <input
@@ -204,15 +204,15 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
             placeholder="Search order ID, customer name, email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="px-3 py-1.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827] focus:outline-none focus:border-[#111827] w-full sm:w-72"
+            className="px-3.5 py-2.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded-lg text-xs text-[#111827] focus:outline-none focus:border-[#111827] w-full sm:w-72 min-h-[44px]"
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-1.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827]"
+            className="px-3 py-2.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded-lg text-xs text-[#111827] min-h-[44px]"
           >
             <option value="">All Statuses</option>
             <option value="PENDING">Pending</option>
@@ -225,7 +225,7 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
           <select
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value as any)}
-            className="px-3 py-1.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827]"
+            className="px-3 py-2.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded-lg text-xs text-[#111827] min-h-[44px]"
           >
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>
@@ -233,7 +233,7 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
 
           <button
             onClick={() => router.refresh()}
-            className="p-1.5 bg-[#FAFAF8] hover:bg-[#F4F4F0] border border-[#E7E5E4] rounded text-[#111827]"
+            className="p-2.5 bg-[#FAFAF8] hover:bg-[#F4F4F0] border border-[#E7E5E4] rounded-lg text-[#111827] min-h-[44px] min-w-[44px] flex items-center justify-center"
             title="Refresh Orders"
           >
             <RefreshCw className="w-4 h-4" />
@@ -241,8 +241,8 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
         </div>
       </div>
 
-      {/* Orders Table */}
-      <div className="bg-white border border-[#E7E5E4] rounded-md overflow-hidden print:hidden">
+      {/* Orders Table Container */}
+      <div className="bg-white border border-[#E7E5E4] rounded-xl overflow-hidden print:hidden shadow-sm">
         {filteredOrders.length === 0 ? (
           <div className="p-12 text-center text-[#6B7280] text-xs space-y-2">
             <AlertCircle className="w-8 h-8 mx-auto text-[#9CA3AF]" />
@@ -251,16 +251,16 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-[#111827]">
+            <table className="w-full text-left text-xs text-[#111827] min-w-[640px]">
               <thead className="bg-[#FAFAF8] text-[10px] uppercase font-bold text-[#6B7280] border-b border-[#E7E5E4] tracking-wider sticky top-0">
                 <tr>
-                  <th className="px-6 py-3.5">Order ID</th>
-                  <th className="px-6 py-3.5">Customer</th>
-                  <th className="px-6 py-3.5">Products</th>
-                  <th className="px-6 py-3.5">Date</th>
-                  <th className="px-6 py-3.5">Total</th>
-                  <th className="px-6 py-3.5">Status</th>
-                  <th className="px-6 py-3.5 text-right">Quick Actions</th>
+                  <th className="px-4 sm:px-6 py-3.5">Order ID</th>
+                  <th className="px-4 sm:px-6 py-3.5">Customer</th>
+                  <th className="px-4 sm:px-6 py-3.5">Products</th>
+                  <th className="px-4 sm:px-6 py-3.5">Date</th>
+                  <th className="px-4 sm:px-6 py-3.5">Total</th>
+                  <th className="px-4 sm:px-6 py-3.5">Status</th>
+                  <th className="px-4 sm:px-6 py-3.5 text-right">Quick Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E7E5E4]">
@@ -270,13 +270,13 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
 
                   return (
                     <tr key={o.id} className="hover:bg-[#FAFAF8] transition-colors cursor-pointer" onClick={() => setSelectedOrder(o)}>
-                      <td className="px-6 py-4 font-mono font-bold text-[#111827]">
+                      <td className="px-4 sm:px-6 py-4 font-mono font-bold text-[#111827]">
                         {o.orderNumber}
                       </td>
 
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-4">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-full bg-[#111827] text-white flex items-center justify-center text-[10px] font-bold">
+                          <div className="w-7 h-7 rounded-full bg-[#111827] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
                             {(o.guestName || "C").charAt(0).toUpperCase()}
                           </div>
                           <div>
@@ -286,12 +286,12 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
                         </div>
                       </td>
 
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-4">
                         <div className="flex items-center gap-2">
                           {firstItem?.product?.images?.[0] ? (
-                            <img src={firstItem.product.images[0]} alt={firstItem.product.name} className="w-8 h-8 object-cover rounded bg-[#F4F4F0] border border-[#E7E5E4]" />
+                            <img src={firstItem.product.images[0]} alt={firstItem.product.name} className="w-8 h-8 object-cover rounded bg-[#F4F4F0] border border-[#E7E5E4] shrink-0" />
                           ) : (
-                            <div className="w-8 h-8 bg-[#E7E5E4] rounded flex items-center justify-center text-[9px] font-bold">Item</div>
+                            <div className="w-8 h-8 bg-[#E7E5E4] rounded flex items-center justify-center text-[9px] font-bold shrink-0">Item</div>
                           )}
                           <span className="font-medium text-[#111827]">
                             {firstItem?.product?.name || "Garment"}
@@ -300,22 +300,22 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
                         </div>
                       </td>
 
-                      <td className="px-6 py-4 text-[#6B7280] text-[11px]">
+                      <td className="px-4 sm:px-6 py-4 text-[#6B7280] text-[11px]">
                         {new Date(o.createdAt).toLocaleDateString()}
                       </td>
 
-                      <td className="px-6 py-4 font-bold text-[#111827]">
+                      <td className="px-4 sm:px-6 py-4 font-bold text-[#111827]">
                         ₹{o.totalAmount}
                       </td>
 
-                      <td className="px-6 py-4">
+                      <td className="px-4 sm:px-6 py-4">
                         {getStatusBadge(o.status)}
                       </td>
 
-                      <td className="px-6 py-4 text-right space-x-1.5" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-4 sm:px-6 py-4 text-right space-x-1.5" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => setSelectedOrder(o)}
-                          className="p-1.5 bg-[#FAFAF8] hover:bg-[#F4F4F0] text-[#111827] border border-[#E7E5E4] rounded inline-block"
+                          className="p-2.5 bg-[#FAFAF8] hover:bg-[#F4F4F0] text-[#111827] border border-[#E7E5E4] rounded-lg inline-flex items-center justify-center min-h-[36px] min-w-[36px]"
                           title="View Details Drawer"
                         >
                           <Eye className="w-3.5 h-3.5" />
@@ -323,7 +323,7 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
 
                         <button
                           onClick={() => { setSelectedOrder(o); setTimeout(handlePrintItemInvoice, 100); }}
-                          className="p-1.5 bg-[#FAFAF8] hover:bg-[#F4F4F0] text-[#111827] border border-[#E7E5E4] rounded inline-block"
+                          className="p-2.5 bg-[#FAFAF8] hover:bg-[#F4F4F0] text-[#111827] border border-[#E7E5E4] rounded-lg inline-flex items-center justify-center min-h-[36px] min-w-[36px]"
                           title="Print Item Invoice"
                         >
                           <Printer className="w-3.5 h-3.5" />
@@ -333,7 +333,7 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
                           <button
                             onClick={() => handleStatusUpdate(o.id, "CANCELLED")}
                             disabled={updatingId === o.id}
-                            className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded inline-block"
+                            className="p-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg inline-flex items-center justify-center min-h-[36px] min-w-[36px]"
                             title="Cancel Order"
                           >
                             <XCircle className="w-3.5 h-3.5" />
@@ -352,7 +352,7 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
       {/* Side Drawer View / Printable Order Invoice */}
       {selectedOrder && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex justify-end print:static print:bg-white">
-          <div className="bg-white border-l border-[#E7E5E4] w-full max-w-lg h-full overflow-y-auto p-6 space-y-6 shadow-2xl flex flex-col justify-between print:border-none print:shadow-none print:max-w-none">
+          <div className="bg-white border-l border-[#E7E5E4] w-full max-w-lg h-full overflow-y-auto p-4 sm:p-6 space-y-6 shadow-2xl flex flex-col justify-between print:border-none print:shadow-none print:max-w-none">
             <div className="space-y-6">
               {/* Drawer Title Bar */}
               <div className="flex items-center justify-between border-b border-[#E7E5E4] pb-4">
@@ -363,13 +363,13 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
                 <div className="flex items-center gap-2 print:hidden">
                   <button
                     onClick={handlePrintItemInvoice}
-                    className="px-3 py-1 bg-[#111827] text-white rounded text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
+                    className="px-3 py-2 bg-[#111827] text-white rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 min-h-[40px]"
                   >
                     <Printer className="w-3.5 h-3.5" /> Print
                   </button>
                   <button
                     onClick={() => setSelectedOrder(null)}
-                    className="p-1.5 text-[#6B7280] hover:text-[#111827] rounded"
+                    className="p-2 text-[#6B7280] hover:text-[#111827] rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -377,15 +377,15 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
               </div>
 
               {/* Status Stage Controls */}
-              <div className="bg-[#FAFAF8] border border-[#E7E5E4] rounded-md p-4 space-y-2 print:hidden">
+              <div className="bg-[#FAFAF8] border border-[#E7E5E4] rounded-xl p-3.5 space-y-2 print:hidden">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Update Status Stage</span>
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                   {STATUS_STEPS.map((st) => (
                     <button
                       key={st}
                       onClick={() => handleStatusUpdate(selectedOrder.id, st)}
                       disabled={updatingId === selectedOrder.id}
-                      className={`py-1.5 text-[10px] font-bold rounded uppercase border transition-colors ${
+                      className={`py-2 text-[10px] font-bold rounded-lg uppercase border transition-colors min-h-[40px] ${
                         selectedOrder.status === st
                           ? "bg-[#111827] text-white border-[#111827]"
                           : "bg-white text-[#6B7280] border-[#E7E5E4] hover:border-[#111827]"
@@ -400,7 +400,7 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
               {/* Customer Info */}
               <div className="space-y-2">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-[#111827]">Customer Information</h3>
-                <div className="bg-white border border-[#E7E5E4] rounded-md p-3.5 space-y-1.5 text-xs text-[#111827]">
+                <div className="bg-white border border-[#E7E5E4] rounded-xl p-3.5 space-y-1.5 text-xs text-[#111827]">
                   <p className="font-bold flex items-center gap-2">
                     <User className="w-3.5 h-3.5 text-[#6B7280]" /> {selectedOrder.guestName || "Registered Customer"}
                   </p>
@@ -423,14 +423,14 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
                 </div>
 
                 {editingAddress ? (
-                  <form onSubmit={handleSaveAddress} className="bg-white border border-[#E7E5E4] rounded-md p-3.5 space-y-2 print:hidden">
+                  <form onSubmit={handleSaveAddress} className="bg-white border border-[#E7E5E4] rounded-xl p-3.5 space-y-2 print:hidden">
                     <input
                       type="text"
                       placeholder="Street Address"
                       required
                       value={addressForm.street}
                       onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })}
-                      className="w-full px-2.5 py-1.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827]"
+                      className="w-full px-3 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded-lg text-xs text-[#111827] min-h-[40px]"
                     />
                     <div className="grid grid-cols-2 gap-2">
                       <input
@@ -439,7 +439,7 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
                         required
                         value={addressForm.city}
                         onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
-                        className="w-full px-2.5 py-1.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827]"
+                        className="w-full px-3 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded-lg text-xs text-[#111827] min-h-[40px]"
                       />
                       <input
                         type="text"
@@ -447,7 +447,7 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
                         required
                         value={addressForm.state}
                         onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
-                        className="w-full px-2.5 py-1.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827]"
+                        className="w-full px-3 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded-lg text-xs text-[#111827] min-h-[40px]"
                       />
                     </div>
                     <input
@@ -456,20 +456,20 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
                       required
                       value={addressForm.pincode}
                       onChange={(e) => setAddressForm({ ...addressForm, pincode: e.target.value })}
-                      className="w-full px-2.5 py-1.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827]"
+                      className="w-full px-3 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded-lg text-xs text-[#111827] min-h-[40px]"
                     />
                     <div className="flex justify-end pt-1">
                       <button
                         type="submit"
                         disabled={updatingId === selectedOrder.id}
-                        className="px-3 py-1 bg-[#111827] text-white text-[10px] font-bold rounded uppercase"
+                        className="px-4 py-2 bg-[#111827] text-white text-[10px] font-bold rounded-lg uppercase min-h-[40px]"
                       >
                         Save Address
                       </button>
                     </div>
                   </form>
                 ) : (
-                  <div className="bg-white border border-[#E7E5E4] rounded-md p-3.5 text-xs space-y-1 text-[#111827]">
+                  <div className="bg-white border border-[#E7E5E4] rounded-xl p-3.5 text-xs space-y-1 text-[#111827]">
                     <p className="font-bold flex items-center gap-2">
                       <MapPin className="w-3.5 h-3.5 text-[#6B7280]" /> {selectedOrder.shippingAddress?.street || selectedOrder.shippingAddress?.address}
                     </p>
@@ -483,12 +483,12 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
               {/* Ordered Items Breakdown */}
               <div className="space-y-2">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-[#111827]">Ordered Items ({selectedOrder.items?.length || 0})</h3>
-                <div className="divide-y divide-[#E7E5E4] border border-[#E7E5E4] rounded-md bg-[#FAFAF8]">
+                <div className="divide-y divide-[#E7E5E4] border border-[#E7E5E4] rounded-xl bg-[#FAFAF8] overflow-hidden">
                   {selectedOrder.items?.map((item: any) => (
                     <div key={item.id} className="p-3 flex items-center justify-between text-xs">
                       <div className="flex items-center gap-3">
                         {item.product?.images?.[0] && (
-                          <img src={item.product.images[0]} alt={item.product.name} className="w-10 h-10 object-cover rounded bg-white border border-[#E7E5E4]" />
+                          <img src={item.product.images[0]} alt={item.product.name} className="w-10 h-10 object-cover rounded-lg bg-white border border-[#E7E5E4] shrink-0" />
                         )}
                         <div>
                           <p className="font-bold text-[#111827]">{item.product?.name || "Garment"}</p>

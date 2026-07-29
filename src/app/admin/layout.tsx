@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { getCurrentSession } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import { LayoutDashboard, Package, ShoppingCart, Sliders, Users, ShieldAlert, Store, Layers, FolderPlus } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingCart, Sliders, Users, ShieldAlert, Store, FolderPlus } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
+import AdminMobileNav from "@/components/AdminMobileNav";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getCurrentSession();
@@ -13,9 +13,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="min-h-screen flex bg-[#FAFAF8] text-[#111827]">
-      {/* Admin Sidebar (Linear / Stripe Operating System Style) */}
-      <aside className="w-64 bg-white border-r border-[#E7E5E4] p-6 flex flex-col justify-between hidden md:flex">
+    <div className="min-h-screen flex flex-col md:flex-row bg-[#FAFAF8] text-[#111827]">
+      {/* Mobile Top Navigation & Drawer Toggle */}
+      <AdminMobileNav session={session} />
+
+      {/* Desktop Admin Sidebar */}
+      <aside className="w-64 bg-white border-r border-[#E7E5E4] p-6 flex-col justify-between hidden md:flex shrink-0 min-h-screen">
         <div className="space-y-8">
           <Link href="/admin/dashboard" className="text-sm font-bold tracking-widest text-[#111827] uppercase flex items-center gap-2">
             <span className="w-6 h-6 bg-[#111827] text-white rounded flex items-center justify-center text-xs font-bold">N</span>
@@ -34,8 +37,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <Link href="/admin/categories" className="flex items-center gap-3 px-3 py-2 text-[#6B7280] rounded-md hover:bg-[#F4F4F0] hover:text-[#111827] transition-colors">
               <FolderPlus className="w-4 h-4 text-[#111827]" /> Categories & Attributes
             </Link>
-
-
 
             <Link href="/admin/orders" className="flex items-center gap-3 px-3 py-2 text-[#6B7280] rounded-md hover:bg-[#F4F4F0] hover:text-[#111827] transition-colors">
               <ShoppingCart className="w-4 h-4 text-[#111827]" /> Orders
@@ -67,14 +68,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
       {/* Main Content View */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 border-b border-[#E7E5E4] px-8 flex items-center justify-between bg-white">
+        <header className="h-16 border-b border-[#E7E5E4] px-4 sm:px-8 flex items-center justify-between bg-white hidden md:flex">
           <div className="text-xs font-semibold text-[#6B7280]">
             Operating System • Role: <span className="text-[#111827] uppercase font-bold">{session.role}</span>
           </div>
           <div className="text-xs text-[#6B7280]">{session.email}</div>
         </header>
 
-        <main className="p-8 flex-1 overflow-y-auto">{children}</main>
+        <main className="p-4 sm:p-6 lg:p-8 flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
   );
