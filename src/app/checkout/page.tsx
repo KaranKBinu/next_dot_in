@@ -1,9 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useCart } from "@/components/CartContext";
 import { createRazorpayOrderAction, completeOrderAction } from "@/app/actions/checkout";
-import { CreditCard, Zap, ShoppingBag, ArrowLeft } from "lucide-react";
+import {
+  getUserAddressesAction,
+  createAddressAction,
+  updateAddressAction,
+  deleteAddressAction,
+  setDefaultAddressAction,
+} from "@/app/actions/addresses";
+import { SavedAddress } from "@/components/address/AddressCard";
+import { AddressSelector } from "@/components/address/AddressSelector";
+import { AddressForm, AddressFormData } from "@/components/address/AddressForm";
+import { SaveAddressModal } from "@/components/address/SaveAddressModal";
+import { CreditCard, Zap, ShoppingBag, ArrowLeft, Plus } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -22,21 +33,84 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Address System State
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [selectedAddress, setSelectedAddress] = useState<SavedAddress | null>(null);
+  const [isManualForm, setIsManualForm] = useState(false);
+  const [guestEmail, setGuestEmail] = useState("");
+  const [manualAddressData, setManualAddressData] = useState<AddressFormData | null>(null);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
   // Active items and total calculation based on session mode
   const activeItems = isBuyNowMode && buyNowItem ? [buyNowItem] : cartItems;
   const activeTotalAmount = isBuyNowMode && buyNowItem
     ? buyNowItem.price * buyNowItem.quantity
     : cartTotalAmount;
 
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    street: "",
-    city: "",
-    state: "",
-    pincode: "",
-  });
+  // Parallel loading of user addresses
+  const loadAddresses = useCallback(async () => {
+    const res = await getUserAddressesAction();
+    if (res.success && res.addresses) {
+      setIsLoggedIn(true);
+      setSavedAddresses(res.addresses as SavedAddress[]);
+      // Automatically select default address or first address
+      const defaultAddr = res.addresses.find((a: any) => a.isDefault) || res.addresses[0];
+      if (defaultAddr) {
+        setSelectedAddress(defaultAddr as SavedAddress);
+      } else {
+        setIsManualForm(true);
+      }
+    } else {
+      setIsLoggedIn(false);
+      setIsManualForm(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAddresses();
+  }, [loadAddresses]);
+
+  const handleAddAddress = async (data: AddressFormData) => {
+    const res = await createAddressAction(data);
+    if (res.success && res.address) {
+      await loadAddresses();
+      setSelectedAddress(res.address as SavedAddress);
+      setIsManualForm(false);
+    } else {
+      setError(res.error || "Failed to save address.");
+    }
+  };
+
+  const handleEditAddress = async (id: string, data: AddressFormData) => {
+    const res = await updateAddressAction(id, data);
+    if (res.success && res.address) {
+      await loadAddresses();
+      if (selectedAddress?.id === id) {
+        setSelectedAddress(res.address as SavedAddress);
+      }
+    } else {
+      setError(res.error || "Failed to update address.");
+    }
+  };
+
+  const handleDeleteAddress = async (id: string) => {
+    const res = await deleteAddressAction(id);
+    if (res.success) {
+      await loadAddresses();
+    } else {
+      setError(res.error || "Failed to delete address.");
+    }
+  };
+
+  const handleSetDefaultAddress = async (id: string) => {
+    const res = await setDefaultAddressAction(id);
+    if (res.success) {
+      await loadAddresses();
+    } else {
+      setError(res.error || "Failed to set default address.");
+    }
+  };
 
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
@@ -52,8 +126,18 @@ export default function CheckoutPage() {
     });
   };
 
-  const handleCheckout = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Trigger payment with resolved address
+  const executePayment = async (resolvedAddress: {
+    fullName: string;
+    phone: string;
+    email: string;
+    street: string;
+    city: string;
+    state: string;
+    pincode: string;
+    area?: string | null;
+    landmark?: string | null;
+  }) => {
     setLoading(true);
     setError(null);
 
@@ -84,7 +168,7 @@ export default function CheckoutPage() {
           razorpayPaymentId: response.razorpay_payment_id,
           items: activeItems,
           totalAmount: activeTotalAmount,
-          shippingAddress: formData,
+          shippingAddress: resolvedAddress,
         });
 
         if (completeRes.success) {
@@ -99,9 +183,9 @@ export default function CheckoutPage() {
         }
       },
       prefill: {
-        name: formData.fullName,
-        email: formData.email,
-        contact: formData.phone,
+        name: resolvedAddress.fullName,
+        email: resolvedAddress.email,
+        contact: resolvedAddress.phone,
       },
       theme: {
         color: "#111827",
@@ -111,6 +195,64 @@ export default function CheckoutPage() {
     const paymentObject = new window.Razorpay(options);
     paymentObject.open();
     setLoading(false);
+  };
+
+  const handleManualFormSubmit = (data: AddressFormData) => {
+    setManualAddressData(data);
+    if (isLoggedIn) {
+      // Prompt logged in user if they want to save this address
+      setShowSaveModal(true);
+    } else {
+      // Proceed directly for guest
+      executePayment({
+        fullName: data.fullName,
+        phone: data.phone,
+        email: guestEmail,
+        street: data.street,
+        city: data.city,
+        state: data.state,
+        pincode: data.pincode,
+        area: data.area,
+        landmark: data.landmark,
+      });
+    }
+  };
+
+  const handleConfirmSaveAddress = async (makeDefault: boolean) => {
+    if (!manualAddressData) return;
+    setLoading(true);
+    await createAddressAction({ ...manualAddressData, isDefault: makeDefault });
+    setShowSaveModal(false);
+    await executePayment({
+      fullName: manualAddressData.fullName,
+      phone: manualAddressData.phone,
+      email: guestEmail,
+      street: manualAddressData.street,
+      city: manualAddressData.city,
+      state: manualAddressData.state,
+      pincode: manualAddressData.pincode,
+      area: manualAddressData.area,
+      landmark: manualAddressData.landmark,
+    });
+  };
+
+  const handleSavedAddressSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedAddress) {
+      setError("Please select or add a shipping address.");
+      return;
+    }
+    executePayment({
+      fullName: selectedAddress.fullName,
+      phone: selectedAddress.phone,
+      email: guestEmail,
+      street: selectedAddress.street,
+      city: selectedAddress.city,
+      state: selectedAddress.state,
+      pincode: selectedAddress.pincode,
+      area: selectedAddress.area,
+      landmark: selectedAddress.landmark,
+    });
   };
 
   if (activeItems.length === 0) {
@@ -200,112 +342,100 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      <form onSubmit={handleCheckout} className="space-y-6">
-        <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 sm:p-6 space-y-4 shadow-xs">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-[#111827] mb-4">Contact Information</h2>
+      {/* Email Address Section */}
+      <div className="mb-6 bg-white border border-[#E7E5E4] rounded-xl p-5 sm:p-6 shadow-xs">
+        <label className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280] block mb-1">
+          Contact Email Address *
+        </label>
+        <input
+          type="email"
+          required
+          value={guestEmail}
+          onChange={(e) => setGuestEmail(e.target.value)}
+          placeholder="For order receipts and tracking updates"
+          className="w-full px-3.5 py-2.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded-xl text-xs text-[#111827] focus:outline-none focus:border-[#111827]"
+        />
+      </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Full Name</label>
-              <input
-                type="text"
-                required
-                value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                className="w-full mt-1 px-3.5 py-2.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded-xl text-xs text-[#111827] focus:outline-none focus:border-[#111827]"
-              />
-            </div>
-
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Phone Number</label>
-              <input
-                type="tel"
-                required
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full mt-1 px-3.5 py-2.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded-xl text-xs text-[#111827] focus:outline-none focus:border-[#111827]"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Email Address</label>
-            <input
-              type="email"
-              required
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full mt-1 px-3.5 py-2.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded-xl text-xs text-[#111827] focus:outline-none focus:border-[#111827]"
-            />
-          </div>
-        </div>
-
-        <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 sm:p-6 space-y-4 shadow-xs">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-[#111827] mb-4">Shipping Address</h2>
-
-          <div>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Street Address</label>
-            <input
-              type="text"
-              required
-              value={formData.street}
-              onChange={(e) => setFormData({ ...formData, street: e.target.value })}
-              className="w-full mt-1 px-3.5 py-2.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded-xl text-xs text-[#111827] focus:outline-none focus:border-[#111827]"
+      {/* Address Selector or Form */}
+      {isLoggedIn && savedAddresses.length > 0 && !isManualForm ? (
+        <form onSubmit={handleSavedAddressSubmit} className="space-y-6">
+          <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 sm:p-6 shadow-xs space-y-4">
+            <AddressSelector
+              addresses={savedAddresses}
+              selectedAddressId={selectedAddress?.id || null}
+              onSelectAddress={(addr) => setSelectedAddress(addr)}
+              onAddAddress={handleAddAddress}
+              onEditAddress={handleEditAddress}
+              onDeleteAddress={handleDeleteAddress}
+              onSetDefaultAddress={handleSetDefaultAddress}
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 sm:p-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 shadow-xs">
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">City</label>
-              <input
-                type="text"
-                required
-                value={formData.city}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                className="w-full mt-1 px-3.5 py-2.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded-xl text-xs text-[#111827] focus:outline-none focus:border-[#111827]"
-              />
+              <span className="text-[10px] uppercase tracking-widest text-[#6B7280] font-bold">Total Payable</span>
+              <p className="text-2xl font-black text-[#111827]">₹{activeTotalAmount}</p>
             </div>
 
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">State</label>
-              <input
-                type="text"
-                required
-                value={formData.state}
-                onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                className="w-full mt-1 px-3.5 py-2.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded-xl text-xs text-[#111827] focus:outline-none focus:border-[#111827]"
-              />
-            </div>
-
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Pincode</label>
-              <input
-                type="text"
-                required
-                value={formData.pincode}
-                onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
-                className="w-full mt-1 px-3.5 py-2.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded-xl text-xs text-[#111827] focus:outline-none focus:border-[#111827]"
-              />
-            </div>
+            <button
+              type="submit"
+              disabled={loading || !selectedAddress}
+              className="w-full sm:w-auto px-8 py-3.5 bg-[#111827] hover:bg-[#27272A] active:scale-[0.98] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 min-h-[48px] shadow-md cursor-pointer"
+            >
+              <CreditCard className="w-4 h-4" />
+              {loading ? "Encrypting Order..." : isBuyNowMode ? "Complete Instant Purchase" : "Complete Order & Pay"}
+            </button>
           </div>
-        </div>
-
-        <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 sm:p-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 shadow-xs">
-          <div>
-            <span className="text-[10px] uppercase tracking-widest text-[#6B7280] font-bold">Total Payable</span>
-            <p className="text-2xl font-black text-[#111827]">₹{activeTotalAmount}</p>
+        </form>
+      ) : (
+        <div className="bg-white border border-[#E7E5E4] rounded-xl p-5 sm:p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-[#E7E5E4] pb-3">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-[#111827]">
+              Shipping Address & Details
+            </h2>
+            {isLoggedIn && savedAddresses.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsManualForm(false)}
+                className="text-xs font-bold text-[#111827] hover:underline cursor-pointer"
+              >
+                Use Saved Addresses
+              </button>
+            )}
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full sm:w-auto px-8 py-3.5 bg-[#111827] hover:bg-[#27272A] active:scale-[0.98] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 min-h-[48px] shadow-md cursor-pointer"
-          >
-            <CreditCard className="w-4 h-4" />
-            {loading ? "Encrypting Order..." : isBuyNowMode ? "Complete Instant Purchase" : "Complete Order & Pay"}
-          </button>
+          <AddressForm
+            onSubmit={handleManualFormSubmit}
+            isSubmitting={loading}
+            submitLabel={isBuyNowMode ? "Proceed to Instant Checkout" : "Proceed to Payment"}
+          />
         </div>
-      </form>
+      )}
+
+      {/* Modal Prompt to Save Address for Logged In User */}
+      <SaveAddressModal
+        isOpen={showSaveModal}
+        onClose={() => {
+          setShowSaveModal(false);
+          if (manualAddressData) {
+            executePayment({
+              fullName: manualAddressData.fullName,
+              phone: manualAddressData.phone,
+              email: guestEmail,
+              street: manualAddressData.street,
+              city: manualAddressData.city,
+              state: manualAddressData.state,
+              pincode: manualAddressData.pincode,
+              area: manualAddressData.area,
+              landmark: manualAddressData.landmark,
+            });
+          }
+        }}
+        onConfirmSave={handleConfirmSaveAddress}
+        isSubmitting={loading}
+      />
     </main>
   );
 }
+

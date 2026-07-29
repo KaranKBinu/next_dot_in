@@ -46,19 +46,23 @@ model User {
 }
 
 model Address {
-  id           String   @id @default(uuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fullName     String
-  street       String
-  city         String
-  state        String
-  pincode      String
-  country      String   @default("India")
-  phone        String
-  isDefault    Boolean  @default(false)
-  createdAt    DateTime @default(now())
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName  String
+  phone     String
+  street    String
+  area      String?
+  city      String
+  state     String
+  pincode   String
+  landmark  String?
+  country   String   @default("India")
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
+  @@index([userId, isDefault])
   @@map("addresses")
 }
 
