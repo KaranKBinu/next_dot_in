@@ -106,7 +106,7 @@ export function AddressForm({
             required
             value={formData.fullName}
             onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-            placeholder="e.g. Bean K Binu"
+            placeholder="Enter your full name"
             className="w-full px-3.5 py-2.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded-xl text-xs text-[#111827] focus:outline-none focus:border-[#111827]"
           />
         </div>
@@ -151,7 +151,7 @@ export function AddressForm({
             maxLength={6}
             value={formData.pincode}
             onChange={(e) => setFormData({ ...formData, pincode: e.target.value.replace(/\D/g, "") })}
-            placeholder="6-digit Pincode (e.g. 682001)"
+            placeholder="6-digit Pincode (e.g. 110001)"
             className="w-full px-3.5 py-2.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded-xl text-xs text-[#111827] font-semibold focus:outline-none focus:border-[#111827]"
           />
           <MapPin className="w-4 h-4 text-[#9CA3AF] absolute right-3.5 top-2.5 pointer-events-none" />
@@ -181,7 +181,7 @@ export function AddressForm({
             type="text"
             value={formData.area}
             onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-            placeholder="e.g. Kadavanthra"
+            placeholder="Area or Locality name"
             className="w-full px-3.5 py-2.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded-xl text-xs text-[#111827] focus:outline-none focus:border-[#111827]"
           />
         )}
@@ -228,7 +228,7 @@ export function AddressForm({
           required
           value={formData.street}
           onChange={(e) => setFormData({ ...formData, street: e.target.value })}
-          placeholder="House no., Street name"
+          placeholder="House No., Building, Street Name"
           className="w-full px-3.5 py-2.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded-xl text-xs text-[#111827] focus:outline-none focus:border-[#111827]"
         />
       </div>
@@ -242,7 +242,7 @@ export function AddressForm({
           type="text"
           value={formData.landmark}
           onChange={(e) => setFormData({ ...formData, landmark: e.target.value })}
-          placeholder="Near Metro Station / Mall"
+          placeholder="Nearby landmark (e.g. Near City Park)"
           className="w-full px-3.5 py-2.5 bg-[#FAFAF8] border border-[#E7E5E4] rounded-xl text-xs text-[#111827] focus:outline-none focus:border-[#111827]"
         />
       </div>
