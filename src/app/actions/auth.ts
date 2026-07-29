@@ -77,7 +77,7 @@ export async function signupAction(formData: FormData) {
     await prisma.address.create({
       data: {
         userId: user.id,
-        name,
+        fullName: name,
         phone: phone || "N/A",
         street,
         city,

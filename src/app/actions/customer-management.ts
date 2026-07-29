@@ -82,13 +82,12 @@ export async function addCustomerAddressAction(data: {
     const address = await prisma.address.create({
       data: {
         userId: data.userId,
-        name: data.name,
+        fullName: data.name,
         phone: data.phone,
         street: data.street,
         city: data.city,
         state: data.state,
         pincode: data.pincode,
-        landmark: data.landmark || null,
         isDefault: data.isDefault ?? false,
       },
     });

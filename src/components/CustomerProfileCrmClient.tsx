@@ -271,7 +271,7 @@ export default function CustomerProfileCrmClient({ customer }: { customer: any }
                     Default Address
                   </span>
                 )}
-                <p className="font-bold text-[#111827]">{addr.name}</p>
+                <p className="font-bold text-[#111827]">{addr.fullName || addr.name}</p>
                 <p className="text-[#6B7280]">{addr.street}</p>
                 <p className="text-[#6B7280]">{addr.city}, {addr.state} {addr.pincode}</p>
                 <p className="text-[#6B7280]">Phone: {addr.phone}</p>
