@@ -18,12 +18,16 @@ type CartContextType = {
   clearCart: () => void;
   totalAmount: number;
   itemCount: number;
+  buyNowItem: CartItem | null;
+  startBuyNow: (item: CartItem) => void;
+  clearBuyNow: () => void;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [buyNowItem, setBuyNowItem] = useState<CartItem | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem("next_in_cart");
@@ -32,11 +36,26 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setItems(JSON.parse(stored));
       } catch (e) {}
     }
+
+    const storedBuyNow = sessionStorage.getItem("next_in_buy_now");
+    if (storedBuyNow) {
+      try {
+        setBuyNowItem(JSON.parse(storedBuyNow));
+      } catch (e) {}
+    }
   }, []);
 
   useEffect(() => {
     localStorage.setItem("next_in_cart", JSON.stringify(items));
   }, [items]);
+
+  useEffect(() => {
+    if (buyNowItem) {
+      sessionStorage.setItem("next_in_buy_now", JSON.stringify(buyNowItem));
+    } else {
+      sessionStorage.removeItem("next_in_buy_now");
+    }
+  }, [buyNowItem]);
 
   const addItem = (item: CartItem) => {
     setItems((prev) => {
@@ -64,11 +83,32 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = () => setItems([]);
 
+  const startBuyNow = (item: CartItem) => {
+    setBuyNowItem(item);
+  };
+
+  const clearBuyNow = () => {
+    setBuyNowItem(null);
+  };
+
   const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, totalAmount, itemCount }}>
+    <CartContext.Provider
+      value={{
+        items,
+        addItem,
+        removeItem,
+        updateQuantity,
+        clearCart,
+        totalAmount,
+        itemCount,
+        buyNowItem,
+        startBuyNow,
+        clearBuyNow,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );

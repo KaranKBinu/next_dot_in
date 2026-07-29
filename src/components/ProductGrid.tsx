@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCart } from "./CartContext";
 import { useWishlist } from "./WishlistContext";
-import { ShoppingBag, Heart } from "lucide-react";
+import { ShoppingBag, Heart, Zap } from "lucide-react";
 
 export type ProductItem = {
   id: string;
@@ -18,8 +19,44 @@ export type ProductItem = {
 };
 
 export default function ProductGrid({ products }: { products: ProductItem[] }) {
-  const { addItem } = useCart();
+  const router = useRouter();
+  const { addItem, startBuyNow } = useCart();
   const { isFavorite, toggleFavorite } = useWishlist();
+
+  const handleCardClick = (slug: string) => {
+    router.push(`/product/${slug}`);
+  };
+
+  const handleToggleFavorite = (e: React.MouseEvent, productId: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    toggleFavorite(productId);
+  };
+
+  const handleAddToCart = (e: React.MouseEvent, product: ProductItem) => {
+    e.stopPropagation();
+    e.preventDefault();
+    addItem({
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: 1,
+      image: product.images[0],
+    });
+  };
+
+  const handleBuyNow = (e: React.MouseEvent, product: ProductItem) => {
+    e.stopPropagation();
+    e.preventDefault();
+    startBuyNow({
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: 1,
+      image: product.images[0],
+    });
+    router.push("/checkout?mode=buynow");
+  };
 
   if (products.length === 0) {
     return (
@@ -37,12 +74,15 @@ export default function ProductGrid({ products }: { products: ProductItem[] }) {
         return (
           <div
             key={product.id}
-            className="group bg-white border border-[#E7E5E4] rounded-xl p-3 sm:p-4 flex flex-col justify-between hover:border-[#111827] hover:shadow-lg transition-all duration-300 relative transform hover:-translate-y-1"
+            onClick={() => handleCardClick(product.slug)}
+            className="group bg-white border border-[#E7E5E4] rounded-xl p-3 sm:p-4 flex flex-col justify-between hover:border-[#111827] hover:shadow-lg transition-all duration-300 relative transform hover:-translate-y-1 cursor-pointer select-none"
           >
+            {/* Favorite Wishlist Icon Button */}
             <button
-              onClick={() => toggleFavorite(product.id)}
-              className="absolute top-4 right-4 z-10 p-2.5 rounded-full bg-white/90 border border-[#E7E5E4] shadow-sm hover:scale-110 active:scale-90 transition-all duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
+              onClick={(e) => handleToggleFavorite(e, product.id)}
+              className="absolute top-4 right-4 z-10 p-2.5 rounded-full bg-white/90 backdrop-blur-xs border border-[#E7E5E4] shadow-xs hover:scale-110 active:scale-90 transition-all duration-200 min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer"
               title={favorited ? "Saved to favorites" : "Add to favorites"}
+              aria-label="Toggle Favorite"
             >
               <Heart
                 className={`w-4 h-4 transition-transform duration-300 ${
@@ -52,6 +92,7 @@ export default function ProductGrid({ products }: { products: ProductItem[] }) {
             </button>
 
             <div>
+              {/* Image Preview */}
               <div className="aspect-[4/3] bg-[#F4F4F0] rounded-lg overflow-hidden mb-3 border border-[#E7E5E4] relative">
                 {product.images?.[0] ? (
                   <img
@@ -60,39 +101,57 @@ export default function ProductGrid({ products }: { products: ProductItem[] }) {
                     className="w-full h-full object-cover group-hover:scale-104 transition-transform duration-500 ease-out"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[#9CA3AF] text-xs uppercase tracking-widest">No Image</div>
+                  <div className="w-full h-full flex items-center justify-center text-[#9CA3AF] text-xs uppercase tracking-widest">
+                    No Image
+                  </div>
                 )}
               </div>
 
-              <span className="text-[9px] sm:text-[10px] font-bold text-[#6B7280] uppercase tracking-widest block">{product.category.name}</span>
-              <h3 className="text-xs sm:text-sm font-bold text-[#111827] mt-0.5 group-hover:text-[#111827] transition-colors line-clamp-1">{product.name}</h3>
-              <p className="text-[11px] sm:text-xs text-[#6B7280] mt-1 line-clamp-2 hidden sm:block">{product.description}</p>
+              <span className="text-[9px] sm:text-[10px] font-bold text-[#6B7280] uppercase tracking-widest block">
+                {product.category.name}
+              </span>
+              <h3 className="text-xs sm:text-sm font-bold text-[#111827] mt-0.5 group-hover:text-[#111827] transition-colors line-clamp-1">
+                {product.name}
+              </h3>
+              <p className="text-[11px] sm:text-xs text-[#6B7280] mt-1 line-clamp-2 hidden sm:block">
+                {product.description}
+              </p>
             </div>
 
-            <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row sm:items-center justify-between pt-3 border-t border-[#E7E5E4] gap-2">
-              <div>
-                <span className="text-sm sm:text-base font-bold text-[#111827]">₹{product.price}</span>
-                {product.compareAtPrice && (
-                  <span className="ml-1.5 text-[10px] sm:text-xs text-[#9CA3AF] line-through">₹{product.compareAtPrice}</span>
+            {/* Price & Action CTA Buttons */}
+            <div className="mt-4 sm:mt-6 flex flex-col gap-3 pt-3 border-t border-[#E7E5E4]">
+              <div className="flex items-baseline justify-between">
+                <div>
+                  <span className="text-sm sm:text-base font-bold text-[#111827]">₹{product.price}</span>
+                  {product.compareAtPrice && (
+                    <span className="ml-1.5 text-[10px] sm:text-xs text-[#9CA3AF] line-through">₹{product.compareAtPrice}</span>
+                  )}
+                </div>
+                {product.stock <= 0 && (
+                  <span className="text-[10px] font-bold text-rose-700 uppercase tracking-wider">Out of stock</span>
                 )}
               </div>
 
-              <div className="flex gap-1.5 w-full sm:w-auto">
+              <div className="grid grid-cols-2 gap-1.5 w-full">
                 <button
-                  onClick={() => addItem({ productId: product.id, name: product.name, price: product.price, quantity: 1, image: product.images[0] })}
+                  onClick={(e) => handleAddToCart(e, product)}
                   disabled={product.stock <= 0}
-                  className="flex-1 sm:flex-initial px-3 py-2 bg-[#111827] text-white border border-[#111827] rounded-lg text-[10px] sm:text-xs font-semibold uppercase tracking-wider hover:bg-[#27272A] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-1 shadow-sm min-h-[40px] cursor-pointer"
+                  className="px-2.5 py-2 bg-[#F4F4F0] hover:bg-[#E7E5E4] text-[#111827] border border-[#E7E5E4] rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wider active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-1 min-h-[40px] cursor-pointer"
+                  title="Add to Bag"
                 >
                   <ShoppingBag className="w-3.5 h-3.5" />
-                  {product.stock > 0 ? "Add" : "Sold Out"}
+                  <span className="truncate">Add</span>
                 </button>
 
-                <Link
-                  href={`/product/${product.slug}`}
-                  className="px-3 py-2 bg-[#FAFAF8] text-[#111827] border border-[#E7E5E4] text-[10px] sm:text-xs font-semibold uppercase tracking-wider rounded-lg hover:border-[#111827] hover:bg-[#F4F4F0] active:scale-95 transition-all min-h-[40px] flex items-center justify-center"
+                <button
+                  onClick={(e) => handleBuyNow(e, product)}
+                  disabled={product.stock <= 0}
+                  className="px-2.5 py-2 bg-[#111827] hover:bg-[#27272A] text-white border border-[#111827] rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wider active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-1 min-h-[40px] cursor-pointer shadow-xs"
+                  title="Buy Now"
                 >
-                  View
-                </Link>
+                  <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                  <span className="truncate">Buy Now</span>
+                </button>
               </div>
             </div>
           </div>
@@ -101,3 +160,4 @@ export default function ProductGrid({ products }: { products: ProductItem[] }) {
     </div>
   );
 }
+
