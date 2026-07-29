@@ -145,8 +145,8 @@ export default function CheckoutPage() {
               {isBuyNowMode ? "Instant Direct Checkout" : "Checkout & Shipping"}
             </h1>
             {isBuyNowMode && (
-              <span className="px-2.5 py-0.5 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                <Zap className="w-3 h-3 text-amber-600 fill-amber-600" />
+              <span className="px-2.5 py-0.5 rounded-full bg-[#111827] text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                <Zap className="w-3 h-3 text-amber-400" />
                 Buy Now
               </span>
             )}

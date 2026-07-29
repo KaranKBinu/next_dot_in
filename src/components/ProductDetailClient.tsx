@@ -134,7 +134,7 @@ export default function ProductDetailClient({ product }: { product: any }) {
               disabled={product.stock <= 0}
               className="py-3.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 bg-[#111827] hover:bg-[#27272A] text-white active:scale-[0.98] disabled:opacity-50 cursor-pointer min-h-[48px] shadow-md"
             >
-              <Zap className="w-4 h-4 text-amber-400 fill-amber-400" />
+              <Zap className="w-4 h-4" />
               <span>Buy Now</span>
             </button>
           </div>
@@ -171,7 +171,7 @@ export default function ProductDetailClient({ product }: { product: any }) {
             disabled={product.stock <= 0}
             className="flex-1 py-3 px-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 bg-[#111827] active:bg-[#27272A] text-white disabled:opacity-50 cursor-pointer min-h-[48px] shadow-md whitespace-nowrap"
           >
-            <Zap className="w-4 h-4 text-amber-400 fill-amber-400 flex-shrink-0" />
+            <Zap className="w-4 h-4 flex-shrink-0" />
             <span>Buy Now</span>
           </button>
         </div>

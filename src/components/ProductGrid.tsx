@@ -149,7 +149,7 @@ export default function ProductGrid({ products }: { products: ProductItem[] }) {
                   className="flex-1 px-2.5 py-2.5 bg-[#111827] hover:bg-[#27272A] text-white border border-[#111827] rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wider active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 min-h-[44px] cursor-pointer shadow-xs whitespace-nowrap"
                   title="Buy Now"
                 >
-                  <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400 flex-shrink-0" />
+                  <Zap className="w-3.5 h-3.5 flex-shrink-0" />
                   <span className="truncate">Buy Now</span>
                 </button>
               </div>
