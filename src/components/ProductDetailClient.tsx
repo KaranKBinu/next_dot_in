@@ -140,6 +140,42 @@ export default function ProductDetailClient({ product }: { product: any }) {
           </div>
         </div>
       </div>
+
+      {/* Sticky Mobile Purchase Bar */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#E7E5E4] p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-2xl animate-fade-in">
+        <div className="flex items-center gap-2.5 max-w-md mx-auto">
+          <button
+            onClick={handleAddToCart}
+            disabled={product.stock <= 0}
+            className={`flex-1 py-3 px-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 border cursor-pointer min-h-[48px] ${
+              added
+                ? "bg-emerald-700 border-emerald-700 text-white"
+                : "bg-[#FAFAF8] active:bg-[#F4F4F0] border-[#111827] text-[#111827]"
+            } disabled:opacity-50 whitespace-nowrap`}
+          >
+            {added ? (
+              <>
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                <span>Added</span>
+              </>
+            ) : (
+              <>
+                <ShoppingBag className="w-4 h-4 flex-shrink-0" />
+                <span>Add to Bag</span>
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={handleBuyNow}
+            disabled={product.stock <= 0}
+            className="flex-1 py-3 px-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 bg-[#111827] active:bg-[#27272A] text-white disabled:opacity-50 cursor-pointer min-h-[48px] shadow-md whitespace-nowrap"
+          >
+            <Zap className="w-4 h-4 text-amber-400 fill-amber-400 flex-shrink-0" />
+            <span>Buy Now</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
