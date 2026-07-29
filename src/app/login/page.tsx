@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { loginAction, signupAction } from "@/app/actions/auth";
+import { fetchPincodeDetails, PincodeData } from "@/lib/pincode";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { CheckCircle2, ShieldCheck, ArrowRight, Lock, User, Mail, Phone, MapPin } from "lucide-react";
+import { CheckCircle2, ShieldCheck, ArrowRight, Lock, User, Mail, Phone, MapPin, Eye, EyeOff, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,10 +26,62 @@ export default function LoginPage() {
     password: "",
     confirmPassword: "",
     street: "",
+    area: "",
     city: "",
     state: "",
     pincode: "",
+    landmark: "",
   });
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Pincode auto-fill state
+  const [availableAreas, setAvailableAreas] = useState<string[]>([]);
+  const [pincodeLoading, setPincodeLoading] = useState(false);
+  const [pincodeSuccess, setPincodeSuccess] = useState(false);
+  const [pincodeError, setPincodeError] = useState<string | null>(null);
+
+  // Debounced 6-digit Pincode Auto-Fill for Signup
+  useEffect(() => {
+    if (!isSignup || step !== 2) return;
+    const cleanPin = form.pincode.trim();
+    if (cleanPin.length !== 6 || !/^[1-9][0-9]{5}$/.test(cleanPin)) {
+      setPincodeSuccess(false);
+      setPincodeError(cleanPin.length === 6 ? "Invalid Indian Pincode format" : null);
+      return;
+    }
+
+    let isMounted = true;
+    const timer = setTimeout(async () => {
+      setPincodeLoading(true);
+      setPincodeError(null);
+
+      const res: PincodeData | null = await fetchPincodeDetails(cleanPin);
+
+      if (isMounted) {
+        setPincodeLoading(false);
+        if (res) {
+          setPincodeSuccess(true);
+          setAvailableAreas(res.areas);
+          setForm((prev) => ({
+            ...prev,
+            city: res.city,
+            state: res.state,
+            area: res.areas.length > 0 ? (res.areas.includes(prev.area) ? prev.area : res.areas[0]) : prev.area,
+          }));
+        } else {
+          setPincodeSuccess(false);
+          setPincodeError("Pincode lookup failed. Please enter city/state manually.");
+        }
+      }
+    }, 400);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [form.pincode, isSignup, step]);
 
   const getPasswordStrength = (pass: string) => {
     if (!pass) return { text: "", color: "" };
@@ -78,9 +131,11 @@ export default function LoginPage() {
     formData.append("phone", form.phone);
     formData.append("password", form.password);
     formData.append("street", form.street);
+    formData.append("area", form.area);
     formData.append("city", form.city);
     formData.append("state", form.state);
     formData.append("pincode", form.pincode);
+    formData.append("landmark", form.landmark);
 
     const res = await signupAction(formData);
     if (res.success) {
@@ -139,13 +194,23 @@ export default function LoginPage() {
 
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Password</label>
-              <input
-                type="password"
-                required
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                className="w-full mt-1 px-3.5 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827] focus:outline-none focus:border-[#111827]"
-              />
+              <div className="relative mt-1">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  className="w-full px-3.5 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827] focus:outline-none focus:border-[#111827] pr-9"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#111827] p-1 transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <button
@@ -179,7 +244,7 @@ export default function LoginPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Karan Binu"
+                    placeholder="Enter your full name"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     className="w-full mt-1 px-3.5 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827]"
@@ -191,7 +256,7 @@ export default function LoginPage() {
                   <input
                     type="email"
                     required
-                    placeholder="karan@example.com"
+                    placeholder="name@example.com"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     className="w-full mt-1 px-3.5 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827]"
@@ -203,7 +268,7 @@ export default function LoginPage() {
                   <input
                     type="text"
                     required
-                    placeholder="+91 9876543210"
+                    placeholder="10-digit mobile number"
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
                     className="w-full mt-1 px-3.5 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827]"
@@ -213,13 +278,23 @@ export default function LoginPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Password *</label>
-                    <input
-                      type="password"
-                      required
-                      value={form.password}
-                      onChange={(e) => setForm({ ...form, password: e.target.value })}
-                      className="w-full mt-1 px-3 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827]"
-                    />
+                    <div className="relative mt-1">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        required
+                        value={form.password}
+                        onChange={(e) => setForm({ ...form, password: e.target.value })}
+                        className="w-full px-3 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827] pr-8"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#111827] p-0.5"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
                     {strength.text && (
                       <span className={`text-[9px] font-bold uppercase tracking-wider mt-1 block ${strength.color}`}>
                         Strength: {strength.text}
@@ -229,13 +304,23 @@ export default function LoginPage() {
 
                   <div>
                     <label className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Confirm Password *</label>
-                    <input
-                      type="password"
-                      required
-                      value={form.confirmPassword}
-                      onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-                      className="w-full mt-1 px-3 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827]"
-                    />
+                    <div className="relative mt-1">
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        required
+                        value={form.confirmPassword}
+                        onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                        className="w-full px-3 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827] pr-8"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#111827] p-0.5"
+                        tabIndex={-1}
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -263,25 +348,74 @@ export default function LoginPage() {
             {/* STEP 2: Default Shipping Address */}
             {step === 2 && (
               <div className="space-y-4">
+                {/* Pincode with Auto-fill indicator */}
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Street Address / House No.</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. 102 Park Avenue"
-                    value={form.street}
-                    onChange={(e) => setForm({ ...form, street: e.target.value })}
-                    className="w-full mt-1 px-3.5 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827]"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">City</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">
+                      Pincode / Postal Code *
+                    </label>
+                    {pincodeLoading && (
+                      <span className="text-[10px] text-[#6B7280] font-semibold flex items-center gap-1">
+                        <Loader2 className="w-3 h-3 animate-spin" /> Fetching location...
+                      </span>
+                    )}
+                    {pincodeSuccess && (
+                      <span className="text-[10px] text-emerald-700 font-bold flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Auto-filled location
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative">
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Kochi"
+                      maxLength={6}
+                      value={form.pincode}
+                      onChange={(e) => setForm({ ...form, pincode: e.target.value.replace(/\D/g, "") })}
+                      placeholder="6-digit Pincode (e.g. 110001)"
+                      className="w-full px-3.5 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827] font-semibold focus:outline-none focus:border-[#111827]"
+                    />
+                    <MapPin className="w-4 h-4 text-[#9CA3AF] absolute right-3.5 top-2.5 pointer-events-none" />
+                  </div>
+                  {pincodeError && <p className="text-[10px] text-rose-600 font-semibold mt-1">{pincodeError}</p>}
+                </div>
+
+                {/* Area / Locality */}
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280] block mb-1">
+                    Area / Locality / Post Office
+                  </label>
+                  {availableAreas.length > 0 ? (
+                    <select
+                      value={form.area}
+                      onChange={(e) => setForm({ ...form, area: e.target.value })}
+                      className="w-full px-3.5 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827] focus:outline-none focus:border-[#111827]"
+                    >
+                      {availableAreas.map((areaName) => (
+                        <option key={areaName} value={areaName}>
+                          {areaName}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={form.area}
+                      onChange={(e) => setForm({ ...form, area: e.target.value })}
+                      placeholder="Area or Locality name"
+                      className="w-full px-3.5 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827] focus:outline-none focus:border-[#111827]"
+                    />
+                  )}
+                </div>
+
+                {/* City & State */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">City *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="City"
                       value={form.city}
                       onChange={(e) => setForm({ ...form, city: e.target.value })}
                       className="w-full mt-1 px-3 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827]"
@@ -289,11 +423,11 @@ export default function LoginPage() {
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">State</label>
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">State *</label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Kerala"
+                      placeholder="State"
                       value={form.state}
                       onChange={(e) => setForm({ ...form, state: e.target.value })}
                       className="w-full mt-1 px-3 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827]"
@@ -301,14 +435,26 @@ export default function LoginPage() {
                   </div>
                 </div>
 
+                {/* Street Address & Landmark */}
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Pincode / Postal Code</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Street Address (Flat / House No. / Building) *</label>
                   <input
                     type="text"
                     required
-                    placeholder="682001"
-                    value={form.pincode}
-                    onChange={(e) => setForm({ ...form, pincode: e.target.value })}
+                    placeholder="House No., Building, Street Name"
+                    value={form.street}
+                    onChange={(e) => setForm({ ...form, street: e.target.value })}
+                    className="w-full mt-1 px-3.5 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827]"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Landmark (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="Nearby landmark (e.g. Near City Park)"
+                    value={form.landmark}
+                    onChange={(e) => setForm({ ...form, landmark: e.target.value })}
                     className="w-full mt-1 px-3.5 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827]"
                   />
                 </div>

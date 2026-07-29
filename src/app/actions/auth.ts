@@ -49,9 +49,11 @@ export async function signupAction(formData: FormData) {
 
   // Address fields
   const street = (formData.get("street") as string)?.trim();
+  const area = (formData.get("area") as string)?.trim();
   const city = (formData.get("city") as string)?.trim();
   const state = (formData.get("state") as string)?.trim();
   const pincode = (formData.get("pincode") as string)?.trim();
+  const landmark = (formData.get("landmark") as string)?.trim();
 
   if (!name || !email || !password) {
     return { success: false, error: "Full Name, Email, and Password are required." };
@@ -80,11 +82,13 @@ export async function signupAction(formData: FormData) {
         fullName: name,
         phone: phone || "N/A",
         street,
+        area: area || null,
         city,
         state,
         pincode,
+        landmark: landmark || null,
         isDefault: true,
-      },
+      } as any,
     });
   }
 
