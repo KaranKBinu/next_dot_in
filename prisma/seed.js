@@ -9,7 +9,7 @@ dotenv.config();
 const connectionString = process.env.DATABASE_URL;
 const pool = new Pool({ connectionString });
 const adapter = new PrismaNeon(pool);
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient();
 
 function hashPassword(password) {
   return crypto.pbkdf2Sync(password, "next_dot_in_salt", 1000, 64, "sha512").toString("hex");
