@@ -8,9 +8,11 @@ export async function updateOrderShippingAddressAction(orderId: string, shipping
   name?: string;
   phone?: string;
   street: string;
+  area?: string;
   city: string;
   state: string;
   pincode: string;
+  landmark?: string;
 }) {
   const session = await getCurrentSession();
   if (!session || (session.role !== "ADMIN" && session.role !== "MASTER_ADMIN")) {

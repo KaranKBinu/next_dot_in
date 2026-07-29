@@ -35,11 +35,20 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
 
   // Address edit state
   const [editingAddress, setEditingAddress] = useState(false);
-  const [addressForm, setAddressForm] = useState({
+  const [addressForm, setAddressForm] = useState<{
+    street: string;
+    area?: string;
+    city: string;
+    state: string;
+    pincode: string;
+    landmark?: string;
+  }>({
     street: "",
+    area: "",
     city: "",
     state: "",
     pincode: "",
+    landmark: "",
   });
 
   // Auto-open drawer if redirected with ?id=
@@ -55,9 +64,11 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
     if (selectedOrder?.shippingAddress) {
       setAddressForm({
         street: selectedOrder.shippingAddress.street || selectedOrder.shippingAddress.address || "",
+        area: selectedOrder.shippingAddress.area || "",
         city: selectedOrder.shippingAddress.city || "",
         state: selectedOrder.shippingAddress.state || "",
         pincode: selectedOrder.shippingAddress.pincode || selectedOrder.shippingAddress.postalCode || "",
+        landmark: selectedOrder.shippingAddress.landmark || "",
       });
     }
   }, [selectedOrder]);
@@ -426,10 +437,17 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
                   <form onSubmit={handleSaveAddress} className="bg-white border border-[#E7E5E4] rounded-xl p-3.5 space-y-2 print:hidden">
                     <input
                       type="text"
-                      placeholder="Street Address"
+                      placeholder="Street Address (Flat / House No. / Building)"
                       required
                       value={addressForm.street}
                       onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })}
+                      className="w-full px-3 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded-lg text-xs text-[#111827] min-h-[40px]"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Area / Locality / Post Office"
+                      value={addressForm.area || ""}
+                      onChange={(e) => setAddressForm({ ...addressForm, area: e.target.value })}
                       className="w-full px-3 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded-lg text-xs text-[#111827] min-h-[40px]"
                     />
                     <div className="grid grid-cols-2 gap-2">
@@ -450,19 +468,28 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
                         className="w-full px-3 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded-lg text-xs text-[#111827] min-h-[40px]"
                       />
                     </div>
-                    <input
-                      type="text"
-                      placeholder="Pincode"
-                      required
-                      value={addressForm.pincode}
-                      onChange={(e) => setAddressForm({ ...addressForm, pincode: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded-lg text-xs text-[#111827] min-h-[40px]"
-                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        placeholder="Pincode"
+                        required
+                        value={addressForm.pincode}
+                        onChange={(e) => setAddressForm({ ...addressForm, pincode: e.target.value })}
+                        className="w-full px-3 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded-lg text-xs text-[#111827] min-h-[40px]"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Landmark (Optional)"
+                        value={addressForm.landmark || ""}
+                        onChange={(e) => setAddressForm({ ...addressForm, landmark: e.target.value })}
+                        className="w-full px-3 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded-lg text-xs text-[#111827] min-h-[40px]"
+                      />
+                    </div>
                     <div className="flex justify-end pt-1">
                       <button
                         type="submit"
                         disabled={updatingId === selectedOrder.id}
-                        className="px-4 py-2 bg-[#111827] text-white text-[10px] font-bold rounded-lg uppercase min-h-[40px]"
+                        className="px-4 py-2 bg-[#111827] text-white text-[10px] font-bold rounded-lg uppercase min-h-[40px] cursor-pointer"
                       >
                         Save Address
                       </button>
@@ -473,8 +500,15 @@ export default function AdminOrdersDashboardClient({ initialOrders }: { initialO
                     <p className="font-bold flex items-center gap-2">
                       <MapPin className="w-3.5 h-3.5 text-[#6B7280]" /> {selectedOrder.shippingAddress?.street || selectedOrder.shippingAddress?.address}
                     </p>
+                    {(selectedOrder.shippingAddress?.area || selectedOrder.shippingAddress?.landmark) && (
+                      <p className="text-[#6B7280] pl-5">
+                        {[selectedOrder.shippingAddress?.area, selectedOrder.shippingAddress?.landmark ? `(Near ${selectedOrder.shippingAddress.landmark})` : null]
+                          .filter(Boolean)
+                          .join(" ")}
+                      </p>
+                    )}
                     <p className="text-[#6B7280] pl-5">
-                      {selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.state} {selectedOrder.shippingAddress?.pincode || selectedOrder.shippingAddress?.postalCode}
+                      {selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.state} — <span className="font-bold text-[#111827]">{selectedOrder.shippingAddress?.pincode || selectedOrder.shippingAddress?.postalCode}</span>
                     </p>
                   </div>
                 )}
