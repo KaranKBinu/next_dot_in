@@ -70,6 +70,14 @@ export default function Header({
             >
               Collection
             </Link>
+            <Link
+              href="/about"
+              className={`transition-all duration-200 hover:text-[#111827] relative py-1 ${
+                pathname === "/about" ? "text-[#111827] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-[#111827]" : ""
+              }`}
+            >
+              About
+            </Link>
           </nav>
         </div>
 

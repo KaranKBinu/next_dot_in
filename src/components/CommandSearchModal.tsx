@@ -160,7 +160,7 @@ export default function CommandSearchModal({ isOpen, onClose }: { isOpen: boolea
           {/* Compact Circular Close Button */}
           <button
             onClick={onClose}
-            className="w-9 h-9 flex items-center justify-center rounded-full border border-[#E7E5E4] bg-white hover:bg-[#F4F4F0] text-[#6B7280] hover:text-[#111827] transition-all duration-200 group active:scale-95 shadow-sm"
+            className="w-9 h-9 flex items-center justify-center rounded border border-[#E7E5E4] bg-white hover:bg-[#F4F4F0] text-[#6B7280] hover:text-[#111827] cursor-pointer shadow-sm border-gray-40"
             title="Close Search (ESC)"
           >
             <X className="w-4 h-4 group-hover:rotate-12 transition-transform duration-200" />
@@ -179,7 +179,7 @@ export default function CommandSearchModal({ isOpen, onClose }: { isOpen: boolea
                     <span className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 text-[#111827]">
                       <Clock className="w-3.5 h-3.5" /> Recent Searches
                     </span>
-                    <button onClick={clearRecentSearches} className="text-[10px] hover:text-[#111827] underline">
+                    <button onClick={clearRecentSearches} className="text-[13px] hover:text-[#111827] underline">
                       Clear All
                     </button>
                   </div>
@@ -216,7 +216,7 @@ export default function CommandSearchModal({ isOpen, onClose }: { isOpen: boolea
                       <button
                         key={term}
                         onClick={() => handleSelectSearch(term)}
-                        className="px-4 py-2 bg-[#FAFAF8] hover:bg-[#F4F4F0] border border-[#E7E5E4] rounded-lg text-[#111827] font-medium transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        className="px-4 py-2 bg-[#FAFAF8] hover:bg-[#F4F4F0] border border-[#E7E5E4] rounded-lg text-[#111827] font-medium transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
                       >
                         {term}
                       </button>
@@ -239,7 +239,7 @@ export default function CommandSearchModal({ isOpen, onClose }: { isOpen: boolea
                           onClose();
                           router.push(`/catalog?category=${cat.slug}`);
                         }}
-                        className="p-4 bg-[#FAFAF8] hover:bg-[#F4F4F0] border border-[#E7E5E4] rounded-xl text-left transition-all hover:border-[#111827] hover:scale-[1.01]"
+                        className="p-4 bg-[#FAFAF8] hover:bg-[#F4F4F0] border border-[#E7E5E4] rounded-xl text-left transition-all hover:border-[#111827] hover:scale-[1.01] cursor-pointer"
                       >
                         <p className="font-bold text-[#111827] text-sm">{cat.name}</p>
                         <p className="text-[11px] text-[#6B7280] mt-1">{cat._count?.products || 0} Products available</p>
