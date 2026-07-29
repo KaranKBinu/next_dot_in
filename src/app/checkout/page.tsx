@@ -299,10 +299,10 @@ export default function CheckoutPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full sm:w-auto px-8 py-3.5 bg-[#111827] hover:bg-[#27272A] active:scale-[0.98] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 min-h-[48px] shadow-md cursor-pointer"
+            className="w-full sm:w-auto px-8 py-3.5 bg-[#111827] hover:bg-[#27272A] active:scale-[0.98] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 min-h-[48px] shadow-md cursor-pointer"
           >
             <CreditCard className="w-4 h-4" />
-            {loading ? "Processing..." : "Pay via Razorpay"}
+            {loading ? "Encrypting Order..." : isBuyNowMode ? "Complete Instant Purchase" : "Complete Order & Pay"}
           </button>
         </div>
       </form>
