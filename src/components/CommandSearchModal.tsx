@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { liveSearchAction } from "@/app/actions/search";
+import { getDynamicSearchInitialsAction } from "@/app/actions/dynamic-search";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Search, X, Command, ArrowRight, Package, Folder, Clock, TrendingUp, Sparkles } from "lucide-react";
+import { Search, X, Command, Package, Folder, Clock, TrendingUp, Sparkles } from "lucide-react";
 
 export default function CommandSearchModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const router = useRouter();
@@ -12,6 +13,17 @@ export default function CommandSearchModal({ isOpen, onClose }: { isOpen: boolea
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<{ products: any[]; categories: any[] }>({ products: [], categories: [] });
+
+  // Dynamic initial data state (fetched from real DB)
+  const [dynamicInitials, setDynamicInitials] = useState<{
+    popularSearchTerms: string[];
+    trendingCategories: any[];
+    featuredProducts: any[];
+  }>({
+    popularSearchTerms: [],
+    trendingCategories: [],
+    featuredProducts: [],
+  });
 
   // Recent Searches local storage
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -23,10 +35,22 @@ export default function CommandSearchModal({ isOpen, onClose }: { isOpen: boolea
     }
   }, []);
 
+  // Fetch real database search recommendations when opened
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 50);
       document.body.style.overflow = "hidden";
+
+      // Fetch dynamic database categories and popular products
+      getDynamicSearchInitialsAction().then((res) => {
+        if (res.success) {
+          setDynamicInitials({
+            popularSearchTerms: res.popularSearchTerms || [],
+            trendingCategories: res.trendingCategories || [],
+            featuredProducts: res.featuredProducts || [],
+          });
+        }
+      });
     } else {
       document.body.style.overflow = "auto";
     }
@@ -35,7 +59,7 @@ export default function CommandSearchModal({ isOpen, onClose }: { isOpen: boolea
     };
   }, [isOpen]);
 
-  // Handle Ctrl+K / Cmd+K and ESC keybindings
+  // Handle ESC keybinding
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
@@ -73,7 +97,15 @@ export default function CommandSearchModal({ isOpen, onClose }: { isOpen: boolea
 
   const saveRecentSearch = (term: string) => {
     if (!term.trim()) return;
-    const updated = [term, ...recentSearches.filter((s) => s !== term)].slice(0, 5);
+    const updated = [term, ...recentSearches.filter((s) => s !== term)].slice(0, 8);
+    setRecentSearches(updated);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("next_recent_searches", JSON.stringify(updated));
+    }
+  };
+
+  const removeRecentSearch = (term: string) => {
+    const updated = recentSearches.filter((s) => s !== term);
     setRecentSearches(updated);
     if (typeof window !== "undefined") {
       localStorage.setItem("next_recent_searches", JSON.stringify(updated));
@@ -90,11 +122,17 @@ export default function CommandSearchModal({ isOpen, onClose }: { isOpen: boolea
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-start justify-center pt-16 sm:pt-24 p-4 animate-fade-in">
-      <div className="bg-white border border-[#E7E5E4] rounded-md max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
-        {/* Command Search Header */}
-        <div className="p-4 border-b border-[#E7E5E4] flex items-center gap-3 bg-[#FAFAF8]">
-          <Search className="w-5 h-5 text-[#6B7280]" />
+    <div
+      className="fixed inset-0 z-[100] bg-black/15 backdrop-blur-[3px] flex items-start justify-center pt-16 sm:pt-20 px-4 sm:px-8 animate-fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white border border-[#E7E5E4] rounded-2xl max-w-5xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[82vh] relative z-[101] animate-dropdown-unfold transition-all duration-300"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Sticky Pinned Search Input Header with Compact Circular Close Button */}
+        <div className="p-4 sm:p-5 border-b border-[#E7E5E4] flex items-center gap-3 bg-[#FAFAF8] sticky top-0 z-20">
+          <Search className="w-5 h-5 text-[#111827]" />
           <input
             ref={inputRef}
             type="text"
@@ -106,40 +144,79 @@ export default function CommandSearchModal({ isOpen, onClose }: { isOpen: boolea
                 handleSelectSearch(query);
               }
             }}
-            className="w-full bg-transparent text-sm text-[#111827] focus:outline-none placeholder-[#9CA3AF]"
+            className="w-full bg-transparent text-base font-medium text-[#111827] focus:outline-none placeholder-[#9CA3AF]"
           />
+
           {query && (
-            <button onClick={() => setQuery("")} className="p-1 text-[#6B7280] hover:text-[#111827]">
+            <button
+              onClick={() => setQuery("")}
+              className="p-1.5 text-[#6B7280] hover:text-[#111827] hover:bg-[#E7E5E4] rounded-full transition-colors"
+              title="Clear text"
+            >
               <X className="w-4 h-4" />
             </button>
           )}
-          <span className="px-2 py-0.5 bg-[#E7E5E4] text-[#6B7280] text-[10px] font-bold rounded flex items-center gap-1 uppercase">
-            ESC
-          </span>
+
+          {/* Compact Circular Close Button */}
+          <button
+            onClick={onClose}
+            className="w-9 h-9 flex items-center justify-center rounded-full border border-[#E7E5E4] bg-white hover:bg-[#F4F4F0] text-[#6B7280] hover:text-[#111827] transition-all duration-200 group active:scale-95 shadow-sm"
+            title="Close Search (ESC)"
+          >
+            <X className="w-4 h-4 group-hover:rotate-12 transition-transform duration-200" />
+          </button>
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
-          {/* EMPTY QUERY: Popular Searches & Categories */}
+        <div className="p-6 sm:p-8 overflow-y-auto space-y-8 flex-1 text-xs bg-white">
+          {/* EMPTY QUERY: Real Database Recommendations */}
           {!query.trim() && (
-            <div className="space-y-6">
+            <div className="space-y-8">
               {/* Recent Searches */}
               {recentSearches.length > 0 && (
                 <div>
-                  <div className="flex items-center justify-between text-[#6B7280] mb-2.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <div className="flex items-center justify-between text-[#6B7280] mb-3">
+                    <span className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 text-[#111827]">
                       <Clock className="w-3.5 h-3.5" /> Recent Searches
                     </span>
                     <button onClick={clearRecentSearches} className="text-[10px] hover:text-[#111827] underline">
                       Clear All
                     </button>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2.5">
                     {recentSearches.map((term) => (
+                      <div key={term} className="inline-flex items-center bg-[#FAFAF8] border border-[#E7E5E4] rounded-lg">
+                        <button
+                          onClick={() => handleSelectSearch(term)}
+                          className="px-3.5 py-1.5 text-[#111827] font-semibold text-xs hover:bg-[#F4F4F0] rounded-l-lg transition-colors"
+                        >
+                          {term}
+                        </button>
+                        <button
+                          onClick={() => removeRecentSearch(term)}
+                          className="px-2 py-1.5 text-[#9CA3AF] hover:text-rose-600 border-l border-[#E7E5E4] rounded-r-lg transition-colors"
+                          title="Remove search"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Dynamic Popular Searches from Database Products */}
+              {dynamicInitials.popularSearchTerms.length > 0 && (
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#111827] block mb-3 flex items-center gap-1.5">
+                    <TrendingUp className="w-3.5 h-3.5" /> Popular Products
+                  </span>
+                  <div className="flex flex-wrap gap-2.5">
+                    {dynamicInitials.popularSearchTerms.map((term) => (
                       <button
                         key={term}
                         onClick={() => handleSelectSearch(term)}
-                        className="px-3 py-1.5 bg-[#FAFAF8] hover:bg-[#F4F4F0] border border-[#E7E5E4] rounded-md text-[#111827] font-semibold flex items-center gap-1.5"
+                        className="px-4 py-2 bg-[#FAFAF8] hover:bg-[#F4F4F0] border border-[#E7E5E4] rounded-lg text-[#111827] font-medium transition-all hover:scale-[1.02] active:scale-[0.98]"
                       >
                         {term}
                       </button>
@@ -148,56 +225,40 @@ export default function CommandSearchModal({ isOpen, onClose }: { isOpen: boolea
                 </div>
               )}
 
-              {/* Popular Searches */}
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280] block mb-2.5 flex items-center gap-1.5">
-                  <TrendingUp className="w-3.5 h-3.5" /> Popular Searches
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  {["Linen Shirt", "Oversized T-Shirt", "Sneakers", "Raw Denim Jeans", "Hoodies"].map((term) => (
-                    <button
-                      key={term}
-                      onClick={() => handleSelectSearch(term)}
-                      className="px-3 py-1.5 bg-white hover:bg-[#FAFAF8] border border-[#E7E5E4] rounded-md text-[#111827] font-medium"
-                    >
-                      {term}
-                    </button>
-                  ))}
+              {/* Dynamic Categories from Database */}
+              {dynamicInitials.trendingCategories.length > 0 && (
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#111827] block mb-3 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" /> Active Categories
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {dynamicInitials.trendingCategories.map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => {
+                          onClose();
+                          router.push(`/catalog?category=${cat.slug}`);
+                        }}
+                        className="p-4 bg-[#FAFAF8] hover:bg-[#F4F4F0] border border-[#E7E5E4] rounded-xl text-left transition-all hover:border-[#111827] hover:scale-[1.01]"
+                      >
+                        <p className="font-bold text-[#111827] text-sm">{cat.name}</p>
+                        <p className="text-[11px] text-[#6B7280] mt-1">{cat._count?.products || 0} Products available</p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-
-              {/* Trending Categories */}
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280] block mb-2.5 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" /> Trending Categories
-                </span>
-                <div className="grid grid-cols-3 gap-3">
-                  {["Clothing", "Footwear", "Accessories"].map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => {
-                        onClose();
-                        router.push(`/catalog?category=${cat.toLowerCase()}`);
-                      }}
-                      className="p-3 bg-[#FAFAF8] hover:bg-[#F4F4F0] border border-[#E7E5E4] rounded-md text-left transition-colors"
-                    >
-                      <p className="font-bold text-[#111827]">{cat}</p>
-                      <p className="text-[10px] text-[#6B7280] mt-0.5">Explore collection</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
+              )}
             </div>
           )}
 
           {/* LIVE SEARCH RESULTS */}
           {query.trim() && (
-            <div className="space-y-6">
+            <div className="space-y-8">
               {/* Category Results */}
               {results.categories.length > 0 && (
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280] block mb-2">Categories</span>
-                  <div className="space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#111827] block mb-3">Categories</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {results.categories.map((c) => (
                       <button
                         key={c.id}
@@ -205,7 +266,7 @@ export default function CommandSearchModal({ isOpen, onClose }: { isOpen: boolea
                           onClose();
                           router.push(`/catalog?category=${c.slug}`);
                         }}
-                        className="w-full p-2.5 hover:bg-[#FAFAF8] rounded-md flex items-center justify-between transition-colors text-left"
+                        className="p-3 bg-[#FAFAF8] hover:bg-[#F4F4F0] border border-[#E7E5E4] rounded-xl flex items-center justify-between transition-all hover:border-[#111827] text-left"
                       >
                         <div className="flex items-center gap-2.5">
                           <Folder className="w-4 h-4 text-[#111827]" />
@@ -221,28 +282,28 @@ export default function CommandSearchModal({ isOpen, onClose }: { isOpen: boolea
               {/* Product Results */}
               {results.products.length > 0 && (
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280] block mb-2">Matching Garments</span>
-                  <div className="divide-y divide-[#E7E5E4] border border-[#E7E5E4] rounded-md overflow-hidden bg-white">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#111827] block mb-3">Matching Garments</span>
+                  <div className="divide-y divide-[#E7E5E4] border border-[#E7E5E4] rounded-xl overflow-hidden bg-white">
                     {results.products.map((p) => (
                       <Link
                         key={p.id}
                         href={`/product/${p.slug}`}
                         onClick={() => { saveRecentSearch(query); onClose(); }}
-                        className="p-3 hover:bg-[#FAFAF8] flex items-center justify-between gap-4 transition-colors block"
+                        className="p-4 hover:bg-[#FAFAF8] flex items-center justify-between gap-4 transition-colors block group"
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4">
                           {p.images?.[0] && (
-                            <img src={p.images[0]} alt={p.name} className="w-10 h-10 object-cover rounded bg-[#F4F4F0] border border-[#E7E5E4]" />
+                            <img src={p.images[0]} alt={p.name} className="w-12 h-12 object-cover rounded-lg bg-[#F4F4F0] border border-[#E7E5E4] group-hover:scale-105 transition-transform duration-300" />
                           )}
                           <div>
-                            <p className="font-bold text-[#111827]">{p.name}</p>
-                            <p className="text-[10px] text-[#6B7280]">{p.category?.name || "Apparel"}</p>
+                            <p className="font-bold text-[#111827] text-sm group-hover:underline">{p.name}</p>
+                            <p className="text-[11px] text-[#6B7280] mt-0.5">{p.category?.name || "Apparel"}</p>
                           </div>
                         </div>
 
                         <div className="text-right">
-                          <span className="font-bold text-[#111827]">₹{p.price}</span>
-                          <span className="block text-[9px] font-semibold text-emerald-800">In Stock</span>
+                          <span className="font-bold text-[#111827] text-sm">₹{p.price}</span>
+                          <span className="block text-[10px] font-semibold text-emerald-800 mt-0.5">In Stock</span>
                         </div>
                       </Link>
                     ))}
@@ -252,18 +313,18 @@ export default function CommandSearchModal({ isOpen, onClose }: { isOpen: boolea
 
               {/* NO RESULTS STATE */}
               {!loading && results.products.length === 0 && results.categories.length === 0 && (
-                <div className="py-8 text-center space-y-3">
-                  <Package className="w-8 h-8 text-[#9CA3AF] mx-auto" />
+                <div className="py-12 text-center space-y-4">
+                  <Package className="w-10 h-10 text-[#9CA3AF] mx-auto" />
                   <div>
-                    <p className="font-bold text-[#111827]">No products found for "{query}"</p>
-                    <p className="text-[#6B7280] text-[11px] mt-0.5">Try searching with a different keyword or browse our full catalog.</p>
+                    <p className="font-bold text-[#111827] text-sm">No products found for "{query}"</p>
+                    <p className="text-[#6B7280] text-xs mt-1">Try searching with a different keyword or browse our full catalog.</p>
                   </div>
                   <button
                     onClick={() => {
                       onClose();
                       router.push("/catalog");
                     }}
-                    className="px-4 py-2 bg-[#111827] text-white rounded text-xs font-semibold uppercase tracking-wider"
+                    className="px-5 py-2.5 bg-[#111827] hover:bg-[#27272A] text-white rounded-lg text-xs font-semibold uppercase tracking-wider transition-all active:scale-95 shadow-sm"
                   >
                     Browse All Products
                   </button>
@@ -274,12 +335,12 @@ export default function CommandSearchModal({ isOpen, onClose }: { isOpen: boolea
         </div>
 
         {/* Modal Footer */}
-        <div className="p-3 bg-[#FAFAF8] border-t border-[#E7E5E4] flex items-center justify-between text-[10px] text-[#6B7280]">
-          <span className="flex items-center gap-1">
-            Press <kbd className="px-1 py-0.5 bg-white border border-[#E7E5E4] rounded font-mono">↵</kbd> to view full catalog results
+        <div className="p-4 bg-[#FAFAF8] border-t border-[#E7E5E4] flex items-center justify-between text-[11px] text-[#6B7280]">
+          <span className="flex items-center gap-1.5">
+            Press <kbd className="px-1.5 py-0.5 bg-white border border-[#E7E5E4] rounded font-mono font-bold text-[#111827]">↵</kbd> to view catalog results
           </span>
-          <span className="flex items-center gap-1">
-            <Command className="w-3 h-3" /> Cmd + K shortcut
+          <span className="flex items-center gap-1.5 font-medium">
+            <Command className="w-3.5 h-3.5 text-[#111827]" /> ESC to close
           </span>
         </div>
       </div>
