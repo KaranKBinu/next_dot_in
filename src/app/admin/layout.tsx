@@ -6,9 +6,10 @@ import LogoutButton from "@/components/LogoutButton";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getCurrentSession();
+  const isAdmin = session && (session.role === "ADMIN" || session.role === "MASTER_ADMIN");
 
-  if (!session || (session.role !== "ADMIN" && session.role !== "MASTER_ADMIN")) {
-    redirect("/admin/login");
+  if (!isAdmin) {
+    return <div className="min-h-screen bg-[#FAFAF8]">{children}</div>;
   }
 
   return (
