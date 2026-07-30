@@ -40,26 +40,10 @@ export async function createProductAction(data: {
   try {
     const slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "") + "-" + Date.now();
 
-    // Resolve categoryId to an actual category record by ID, Name, or Slug
-    let category = await prisma.category.findFirst({
-      where: {
-        OR: [
-          { id: data.categoryId },
-          { name: { equals: data.categoryId, mode: "insensitive" } },
-          { slug: { equals: data.categoryId, mode: "insensitive" } },
-        ],
-      },
-    });
-
+    // Resolve categoryId — must be a valid UUID from the admin UI dropdown
+    const category = await prisma.category.findUnique({ where: { id: data.categoryId } });
     if (!category) {
-      category = await prisma.category.findFirst() || await prisma.category.create({
-        data: {
-          name: "Clothing",
-          slug: "clothing",
-          description: "Default clothing category",
-          attributes: ["Size", "Color", "Fabric", "Fit"],
-        },
-      });
+      return { success: false, error: "Invalid category. Please select a valid category." };
     }
 
     const product = await prisma.product.create({

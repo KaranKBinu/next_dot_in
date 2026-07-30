@@ -56,14 +56,17 @@ export async function completeOrderAction(data: {
       },
     });
 
-    // Reduce stock for ordered products
-    for (const item of data.items) {
-      if (item.productId) {
-        await prisma.product.update({
-          where: { id: item.productId },
+    // Reduce stock for all ordered products atomically
+    const stockUpdates = data.items
+      .filter((item) => item.productId)
+      .map((item) =>
+        prisma.product.update({
+          where: { id: item.productId! },
           data: { stock: { decrement: item.quantity } },
-        }).catch(() => {});
-      }
+        })
+      );
+    if (stockUpdates.length > 0) {
+      await prisma.$transaction(stockUpdates).catch(() => {});
     }
 
     return { success: true, orderId: order.id, orderNumber: order.orderNumber };

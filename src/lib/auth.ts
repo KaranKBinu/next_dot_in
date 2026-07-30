@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { prisma } from "./prisma";
 import crypto from "crypto";
 
@@ -10,7 +11,7 @@ export type UserSession = {
 };
 
 export function hashPassword(password: string): string {
-  return crypto.pbkdf2Sync(password, "next_dot_in_salt", 1000, 64, "sha512").toString("hex");
+  return crypto.pbkdf2Sync(password, "next_dot_in_salt", 100000, 64, "sha512").toString("hex");
 }
 
 export function verifyPassword(password: string, hash: string): boolean {
@@ -18,7 +19,7 @@ export function verifyPassword(password: string, hash: string): boolean {
   return newHash === hash;
 }
 
-export async function getCurrentSession(): Promise<UserSession | null> {
+export const getCurrentSession = cache(async (): Promise<UserSession | null> => {
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get("next_in_session")?.value;
 
@@ -38,7 +39,7 @@ export async function getCurrentSession(): Promise<UserSession | null> {
   } catch (error) {
     return null;
   }
-}
+});
 
 export async function setSessionCookie(userId: string, role: string) {
   const cookieStore = await cookies();

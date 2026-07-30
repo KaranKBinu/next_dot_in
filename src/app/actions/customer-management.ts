@@ -1,8 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getCurrentSession } from "@/lib/auth";
-import { hashPassword } from "@/lib/auth";
+import { getCurrentSession, hashPassword } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
 export async function updateCustomerProfileAction(data: {

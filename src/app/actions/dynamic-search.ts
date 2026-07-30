@@ -4,11 +4,18 @@ import { prisma } from "@/lib/prisma";
 
 export async function getDynamicSearchInitialsAction() {
   try {
-    const [popularProducts, trendingCategories, featuredProducts] = await Promise.all([
-      // Top wishlisted / featured products for Popular Searches
+    const [popularProducts, trendingCategories] = await Promise.all([
+      // Top featured products for Popular Searches
       prisma.product.findMany({
         where: { isPublished: true, isFeatured: true },
-        include: { category: true },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          price: true,
+          images: true,
+          category: { select: { name: true, slug: true } },
+        },
         take: 6,
         orderBy: { createdAt: "desc" },
       }),
@@ -19,28 +26,19 @@ export async function getDynamicSearchInitialsAction() {
             some: { isPublished: true },
           },
         },
-        include: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
           _count: { select: { products: true } },
         },
         take: 6,
         orderBy: { name: "asc" },
       }),
-      // Fallback latest arrivals
-      prisma.product.findMany({
-        where: { isPublished: true },
-        select: { name: true },
-        take: 6,
-        orderBy: { createdAt: "desc" },
-      }),
     ]);
 
-    // Format popular search terms from real database product names
-    const popularSearchTerms = Array.from(
-      new Set([
-        ...popularProducts.map((p) => p.name),
-        ...featuredProducts.map((p) => p.name),
-      ])
-    ).slice(0, 6);
+    // Derive search terms from the already-fetched featured products
+    const popularSearchTerms = popularProducts.map((p) => p.name).slice(0, 6);
 
     return {
       success: true,

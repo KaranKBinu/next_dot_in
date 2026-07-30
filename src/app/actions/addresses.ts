@@ -152,20 +152,18 @@ export async function setDefaultAddressAction(id: string) {
   if (!session) return { success: false, error: "Unauthorized" };
 
   try {
-    const existing = await prisma.address.findUnique({ where: { id } });
-    if (!existing || existing.userId !== session.id) {
-      return { success: false, error: "Address not found or unauthorized." };
-    }
-
-    await prisma.address.updateMany({
-      where: { userId: session.id },
-      data: { isDefault: false },
-    });
-
-    await prisma.address.update({
-      where: { id },
-      data: { isDefault: true },
-    });
+    // Transaction: unset all defaults, then set the chosen one.
+    // The update's where clause validates ownership — throws if not found.
+    await prisma.$transaction([
+      prisma.address.updateMany({
+        where: { userId: session.id },
+        data: { isDefault: false },
+      }),
+      prisma.address.update({
+        where: { id, userId: session.id } as any,
+        data: { isDefault: true },
+      }),
+    ]);
 
     revalidatePath("/profile");
     revalidatePath("/checkout");

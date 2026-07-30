@@ -7,18 +7,29 @@ export default async function ProfilePage() {
   const session = await getCurrentSession();
   if (!session) redirect("/login");
 
-  const [user, orders, addresses] = await Promise.all([
+  const [user, orders, addresses, reviews] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.id },
     }),
     prisma.order.findMany({
       where: { userId: session.id },
-      include: { items: true },
+      include: {
+        items: {
+          include: {
+            product: { select: { slug: true } },
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
     }),
     prisma.address.findMany({
       where: { userId: session.id },
       orderBy: { isDefault: "desc" },
+    }),
+    prisma.review.findMany({
+      where: { userId: session.id },
+      include: { product: { select: { name: true, slug: true, images: true } } },
+      orderBy: { createdAt: "desc" },
     }),
   ]);
 
@@ -31,7 +42,8 @@ export default async function ProfilePage() {
         </div>
       </div>
 
-      <ProfileClientTabs user={user} orders={orders} addresses={addresses} />
+      <ProfileClientTabs user={user} orders={orders} addresses={addresses} reviews={reviews} />
     </main>
   );
 }
+

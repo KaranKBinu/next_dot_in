@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { LayoutDashboard, Package, ShoppingCart, Sliders, Users, ShieldAlert, Store, FolderPlus, Menu, X } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingCart, Sliders, Users, ShieldAlert, Store, FolderPlus, Menu, X, MessageSquare, UserCheck, ClipboardList } from "lucide-react";
+
 import LogoutButton from "./LogoutButton";
 
 export default function AdminMobileNav({ session }: { session: any }) {
@@ -47,8 +48,11 @@ export default function AdminMobileNav({ session }: { session: any }) {
                 <Link href="/admin/categories" onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-3 text-[#111827] rounded-lg hover:bg-[#F4F4F0]">
                   <FolderPlus className="w-4 h-4" /> Categories & Attributes
                 </Link>
-                <Link href="/admin/orders" onClick={() => setOpen(false)} className="flex items-center gap-[#111827] px-3 py-3 text-[#111827] rounded-lg hover:bg-[#F4F4F0]">
+                <Link href="/admin/orders" onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-3 text-[#111827] rounded-lg hover:bg-[#F4F4F0]">
                   <ShoppingCart className="w-4 h-4" /> Orders
+                </Link>
+                <Link href="/admin/reviews" onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-3 text-[#111827] rounded-lg hover:bg-[#F4F4F0]">
+                  <MessageSquare className="w-4 h-4" /> Reviews Moderation
                 </Link>
                 <Link href="/admin/customers" onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-3 text-[#111827] rounded-lg hover:bg-[#F4F4F0]">
                   <Users className="w-4 h-4" /> Customers
@@ -58,10 +62,22 @@ export default function AdminMobileNav({ session }: { session: any }) {
                 </Link>
 
                 {session.role === "MASTER_ADMIN" && (
-                  <Link href="/admin/master" onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-3 text-rose-700 bg-rose-50 border border-rose-200 rounded-lg">
-                    <ShieldAlert className="w-4 h-4" /> Master Admin
-                  </Link>
+                  <div className="pt-2 border-t border-[#E7E5E4] space-y-1">
+                    <span className="text-[10px] font-extrabold text-[#9CA3AF] uppercase tracking-widest px-3 block">
+                      Master Controls
+                    </span>
+                    <Link href="/admin/users" onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-3 text-rose-700 bg-rose-50 border border-rose-200 rounded-lg">
+                      <UserCheck className="w-4 h-4" /> Users & Roles
+                    </Link>
+                    <Link href="/admin/audit-logs" onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-3 text-[#111827] rounded-lg hover:bg-[#F4F4F0]">
+                      <ClipboardList className="w-4 h-4" /> Audit Logs
+                    </Link>
+                    <Link href="/admin/master" onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-3 text-rose-700 rounded-lg hover:bg-rose-50">
+                      <ShieldAlert className="w-4 h-4" /> Master Overview
+                    </Link>
+                  </div>
                 )}
+
               </nav>
             </div>
 

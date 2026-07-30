@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "./prisma";
 
 export const DEFAULT_SETTINGS: Record<string, string> = {
@@ -8,7 +9,7 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   ai_intake_enabled: "true",
 };
 
-export async function getSystemSettings(): Promise<Record<string, boolean>> {
+export const getSystemSettings = cache(async (): Promise<Record<string, boolean>> => {
   try {
     const settings = await prisma.systemSetting.findMany();
     const result: Record<string, boolean> = {};
@@ -29,7 +30,7 @@ export async function getSystemSettings(): Promise<Record<string, boolean>> {
       ai_intake_enabled: true,
     };
   }
-}
+});
 
 export async function updateSystemSetting(key: string, enabled: boolean) {
   return await prisma.systemSetting.upsert({

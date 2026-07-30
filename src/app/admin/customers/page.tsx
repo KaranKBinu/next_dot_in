@@ -4,8 +4,15 @@ import Link from "next/link";
 export default async function AdminCustomersPage() {
   const customers = await prisma.user.findMany({
     where: { role: "CUSTOMER" },
-    include: { orders: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      createdAt: true,
+      _count: { select: { orders: true } },
+    },
     orderBy: { createdAt: "desc" },
+    take: 100,
   });
 
   return (
@@ -36,7 +43,7 @@ export default async function AdminCustomersPage() {
                 <tr key={c.id} className="hover:bg-[#FAFAF8] transition-colors">
                   <td className="px-6 py-3.5 font-bold text-[#111827]">{c.name || "N/A"}</td>
                   <td className="px-6 py-3.5 text-[#6B7280]">{c.email}</td>
-                  <td className="px-6 py-3.5 font-bold">{c.orders.length}</td>
+                  <td className="px-6 py-3.5 font-bold">{c._count.orders}</td>
                   <td className="px-6 py-3.5 text-[#6B7280]">{new Date(c.createdAt).toLocaleDateString()}</td>
                   <td className="px-6 py-3.5 text-right">
                     <Link

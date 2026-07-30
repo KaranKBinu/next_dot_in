@@ -16,17 +16,16 @@ export async function loginAction(formData: FormData) {
     const targetRole = email === "master@next.in" ? "MASTER_ADMIN" : "ADMIN";
     const targetName = email === "master@next.in" ? "Master Admin" : "Store Admin";
 
-    let adminUser = await prisma.user.findUnique({ where: { email } });
-    if (!adminUser) {
-      adminUser = await prisma.user.create({
-        data: {
-          email,
-          name: targetName,
-          passwordHash: hashPassword(password),
-          role: targetRole,
-        },
-      });
-    }
+    const adminUser = await prisma.user.upsert({
+      where: { email },
+      update: {},
+      create: {
+        email,
+        name: targetName,
+        passwordHash: hashPassword(password),
+        role: targetRole,
+      },
+    });
 
     await setSessionCookie(adminUser.id, adminUser.role);
     return { success: true, role: adminUser.role };

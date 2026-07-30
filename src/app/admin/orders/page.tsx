@@ -3,10 +3,31 @@ import AdminOrdersDashboardClient from "@/components/AdminOrdersDashboardClient"
 
 export default async function AdminOrdersPage() {
   const orders = await prisma.order.findMany({
-    include: {
+    take: 50,
+    select: {
+      id: true,
+      orderNumber: true,
+      userId: true,
+      guestEmail: true,
+      guestName: true,
+      guestPhone: true,
+      totalAmount: true,
+      status: true,
+      shippingAddress: true,
+      razorpayOrderId: true,
+      razorpayPaymentId: true,
+      createdAt: true,
+      updatedAt: true,
       items: {
-        include: {
-          product: true,
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          quantity: true,
+          image: true,
+          product: {
+            select: { id: true, name: true, images: true },
+          },
         },
       },
     },

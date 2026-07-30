@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createCategoryAction } from "@/app/actions/account";
+import { createCategoryAction } from "@/app/actions/category";
 import { useRouter } from "next/navigation";
 import { Plus, FolderPlus } from "lucide-react";
 

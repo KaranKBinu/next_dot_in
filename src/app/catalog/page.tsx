@@ -23,8 +23,19 @@ export default async function CatalogPage({
 
   const products = await prisma.product.findMany({
     where: whereClause,
-    include: { category: true },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
+      price: true,
+      compareAtPrice: true,
+      stock: true,
+      images: true,
+      category: { select: { name: true } },
+    },
     orderBy: { createdAt: "desc" },
+    take: 48,
   });
 
   return (

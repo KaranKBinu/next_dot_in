@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createCategoryAction } from "@/app/actions/account";
+import { createCategoryAction } from "@/app/actions/category";
 import { updateCategoryAction } from "@/app/actions/category";
 import { deleteCategoryAction } from "@/app/actions/admin-crud";
 import { useRouter } from "next/navigation";

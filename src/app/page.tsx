@@ -1,27 +1,30 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { getSystemSettings } from "@/lib/settings";
 import { ArrowRight } from "lucide-react";
 import ProductGrid from "@/components/ProductGrid";
 
 export default async function Home() {
-  const settings = await getSystemSettings();
-
-  const [featuredProducts, newArrivals, categories] = await Promise.all([
-    settings.featured_products_enabled
-      ? prisma.product.findMany({
-          where: { isFeatured: true, isPublished: true },
-          include: { category: true },
-          take: 4,
-        })
-      : [],
+  const [newArrivals, categories] = await Promise.all([
     prisma.product.findMany({
       where: { isPublished: true },
-      include: { category: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        price: true,
+        compareAtPrice: true,
+        stock: true,
+        images: true,
+        category: { select: { name: true } },
+      },
       orderBy: { createdAt: "desc" },
       take: 6,
     }),
-    prisma.category.findMany({ take: 4 }),
+    prisma.category.findMany({
+      select: { id: true, name: true, slug: true, description: true },
+      take: 4,
+    }),
   ]);
 
   return (

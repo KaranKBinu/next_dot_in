@@ -1,16 +1,23 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Package, ShoppingBag, Users, IndianRupee, ArrowUpRight } from "lucide-react";
+import { Package, ShoppingBag, Users, IndianRupee, ArrowUpRight, MessageSquare } from "lucide-react";
 
 export default async function AdminDashboardPage() {
-  const [productCount, orderCount, customerCount, orders] = await Promise.all([
+  const [productCount, orderCount, customerCount, reviewCount, pendingReviewCount, orders, revenueAgg] = await Promise.all([
     prisma.product.count(),
     prisma.order.count(),
     prisma.user.count({ where: { role: "CUSTOMER" } }),
-    prisma.order.findMany({ take: 5, orderBy: { createdAt: "desc" } }),
+    prisma.review.count(),
+    prisma.review.count({ where: { status: "PENDING" } }),
+    prisma.order.findMany({
+      take: 5,
+      orderBy: { createdAt: "desc" },
+      select: { id: true, orderNumber: true, totalAmount: true, status: true, createdAt: true },
+    }),
+    prisma.order.aggregate({ _sum: { totalAmount: true } }),
   ]);
 
-  const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+  const totalRevenue = revenueAgg._sum.totalAmount ?? 0;
 
   return (
     <div className="space-y-8 max-w-6xl">
@@ -20,7 +27,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-white border border-[#E7E5E4] rounded-md p-5">
           <div className="flex items-center justify-between text-[#6B7280] mb-1">
             <span className="text-[10px] font-bold uppercase tracking-wider">Total Products</span>
@@ -45,6 +52,21 @@ export default async function AdminDashboardPage() {
           <p className="text-2xl font-bold text-[#111827]">{customerCount}</p>
         </div>
 
+        <Link href="/admin/reviews" className="bg-white border border-[#E7E5E4] hover:border-[#111827] rounded-md p-5 transition-colors">
+          <div className="flex items-center justify-between text-[#6B7280] mb-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider">Reviews</span>
+            <MessageSquare className="w-4 h-4 text-[#111827]" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <p className="text-2xl font-bold text-[#111827]">{reviewCount}</p>
+            {pendingReviewCount > 0 && (
+              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                {pendingReviewCount} pending
+              </span>
+            )}
+          </div>
+        </Link>
+
         <div className="bg-white border border-[#E7E5E4] rounded-md p-5">
           <div className="flex items-center justify-between text-[#6B7280] mb-1">
             <span className="text-[10px] font-bold uppercase tracking-wider">Recent Revenue</span>
@@ -53,6 +75,7 @@ export default async function AdminDashboardPage() {
           <p className="text-2xl font-bold text-[#111827]">₹{totalRevenue}</p>
         </div>
       </div>
+
 
       {/* Recent Orders Table */}
       <div className="bg-white border border-[#E7E5E4] rounded-md p-6">
