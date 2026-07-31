@@ -26,7 +26,7 @@ export default function ProfileClientTabs({
   addresses: any[];
   reviews?: any[];
 }) {
-  const [activeTab, setActiveTab] = useState<"profile" | "orders" | "addresses" | "reviews" | "security">("orders");
+  const [activeTab, setActiveTab] = useState<"profile" | "orders" | "addresses" | "reviews" | "security" | "preferences">("orders");
   const [profileForm, setProfileForm] = useState({ name: user?.name || "", phone: user?.phone || "" });
   const [msg, setMsg] = useState<string | null>(null);
   const [savedAddresses, setSavedAddresses] = useState(addresses);
