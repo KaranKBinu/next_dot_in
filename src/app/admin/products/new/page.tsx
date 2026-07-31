@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { createProductAction } from "@/app/actions/product";
+import { useState, useEffect } from "react";
+import { createProductAction, getCategoriesAction } from "@/app/actions/product";
 import { processAiProductIntakeAction } from "@/app/actions/ai-intake";
+import { uploadImageToBlobAction } from "@/app/actions/upload";
 import { useRouter } from "next/navigation";
 import { Camera, Sparkles, UploadCloud, CheckCircle2, ArrowRight, X, PenTool, Sparkle } from "lucide-react";
 
@@ -20,9 +21,6 @@ const CATEGORY_MAP: Record<string, { attributes: string[]; subcategories: string
     attributes: ["Color", "Material"],
   },
 };
-
-import { useEffect } from "react";
-import { getCategoriesAction } from "@/app/actions/product";
 
 export default function GuidedProductCreationPage() {
   const router = useRouter();
@@ -70,19 +68,27 @@ export default function GuidedProductCreationPage() {
     } as Record<string, string>,
   });
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
+  const [uploading, setUploading] = useState(false);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
     const files = Array.from(e.target.files);
-    
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setImages((prev) => [...prev, event.target!.result as string]);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+    setUploading(true);
+    setError(null);
+
+    for (const file of files) {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await uploadImageToBlobAction(formData);
+      if (res.success && res.url) {
+        setImages((prev) => [...prev, res.url!]);
+      } else {
+        setError(res.error || "Failed to upload photo.");
+      }
+    }
+
+    setUploading(false);
   };
 
   const removePhoto = (index: number) => {
