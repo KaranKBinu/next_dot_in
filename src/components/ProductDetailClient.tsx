@@ -58,7 +58,7 @@ export default function ProductDetailClient({ product }: { product: any }) {
         <div>
           <span className="text-[11px] font-extrabold text-[#6B7280] uppercase tracking-widest">{product.category.name}</span>
           <h1 className="text-2xl sm:text-3xl font-black text-[#111827] mt-1 tracking-tight">{product.name}</h1>
-          
+
           <div className="mt-4 flex items-baseline gap-3">
             <span className="text-2xl font-black text-[#111827]">₹{product.price}</span>
             {product.compareAtPrice && (
@@ -112,11 +112,10 @@ export default function ProductDetailClient({ product }: { product: any }) {
             <button
               onClick={handleAddToCart}
               disabled={product.stock <= 0}
-              className={`py-3.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 border cursor-pointer min-h-[48px] ${
-                added
+              className={`py-3.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 border cursor-pointer min-h-[48px] ${added
                   ? "bg-emerald-700 border-emerald-700 text-white"
                   : "bg-[#FAFAF8] hover:bg-[#F4F4F0] border-[#111827] text-[#111827] active:scale-[0.98]"
-              } disabled:opacity-50`}
+                } disabled:opacity-50`}
             >
               {added ? (
                 <>
@@ -134,7 +133,7 @@ export default function ProductDetailClient({ product }: { product: any }) {
               disabled={product.stock <= 0}
               className="py-3.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 bg-[#111827] hover:bg-[#27272A] text-white active:scale-[0.98] disabled:opacity-50 cursor-pointer min-h-[48px] shadow-md"
             >
-              <Zap className="w-4 h-4" />
+
               <span>Buy Now</span>
             </button>
           </div>
@@ -147,11 +146,10 @@ export default function ProductDetailClient({ product }: { product: any }) {
           <button
             onClick={handleAddToCart}
             disabled={product.stock <= 0}
-            className={`flex-1 py-3 px-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 border cursor-pointer min-h-[48px] ${
-              added
+            className={`flex-1 py-3 px-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 border cursor-pointer min-h-[48px] ${added
                 ? "bg-emerald-700 border-emerald-700 text-white"
                 : "bg-[#FAFAF8] active:bg-[#F4F4F0] border-[#111827] text-[#111827]"
-            } disabled:opacity-50 whitespace-nowrap`}
+              } disabled:opacity-50 whitespace-nowrap`}
           >
             {added ? (
               <>
@@ -171,7 +169,7 @@ export default function ProductDetailClient({ product }: { product: any }) {
             disabled={product.stock <= 0}
             className="flex-1 py-3 px-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 bg-[#111827] active:bg-[#27272A] text-white disabled:opacity-50 cursor-pointer min-h-[48px] shadow-md whitespace-nowrap"
           >
-            <Zap className="w-4 h-4 flex-shrink-0" />
+
             <span>Buy Now</span>
           </button>
         </div>
