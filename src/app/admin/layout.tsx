@@ -13,16 +13,19 @@ import {
   UserCheck,
   ClipboardList,
   Crown,
+  Tag,
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import AdminMobileNav from "@/components/AdminMobileNav";
+
+import { redirect } from "next/navigation";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getCurrentSession();
   const isAdmin = session && (session.role === "ADMIN" || session.role === "MASTER_ADMIN");
 
   if (!isAdmin) {
-    return <div className="min-h-screen bg-[#FAFAF8]">{children}</div>;
+    redirect("/admin/login");
   }
 
   const isMasterAdmin = session.role === "MASTER_ADMIN";
@@ -72,6 +75,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               </Link>
               <Link href="/admin/reviews" className="flex items-center gap-3 px-3 py-2 text-[#6B7280] rounded-lg hover:bg-[#FAFAF8] hover:text-[#111827] transition-all">
                 <MessageSquare className="w-4 h-4 text-[#111827]" /> Reviews Moderation
+              </Link>
+              <Link href="/admin/coupons" className="flex items-center gap-3 px-3 py-2 text-[#6B7280] rounded-lg hover:bg-[#FAFAF8] hover:text-[#111827] transition-all">
+                <Tag className="w-4 h-4 text-[#111827]" /> Coupons & Promotions
               </Link>
               <Link href="/admin/customers" className="flex items-center gap-3 px-3 py-2 text-[#6B7280] rounded-lg hover:bg-[#FAFAF8] hover:text-[#111827] transition-all">
                 <Users className="w-4 h-4 text-[#111827]" /> Customers
@@ -126,21 +132,31 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
       {/* Main Content View */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 border-b border-[#E7E5E4] px-4 sm:px-8 flex items-center justify-between bg-white hidden md:flex">
+        <header className="h-14 border-b border-[#E7E5E4] px-4 sm:px-8 flex items-center justify-between bg-white hidden md:flex">
           <div className="flex items-center gap-3 text-xs font-semibold text-[#6B7280]">
-            <span>NEXT.IN Operating System</span>
-            <span>•</span>
-            <div className="flex items-center gap-1.5">
-              <span>Role:</span>
-              <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider ${
-                isMasterAdmin ? "bg-[#111827] text-white flex items-center gap-1.5 shadow-xs" : "bg-[#FAFAF8] border border-[#E7E5E4] text-[#111827]"
-              }`}>
-                {isMasterAdmin && <Crown className="w-3 h-3 text-amber-400" />}
-                {session.role}
+            <span className="text-[11px] font-mono tracking-widest text-[#9CA3AF] uppercase">NEXT.IN OS</span>
+            <span className="text-[#E7E5E4]">|</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-medium text-[#6B7280]">Session Role:</span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-[#FAFAF8] border border-[#E7E5E4] text-[#111827]">
+                {isMasterAdmin ? (
+                  <>
+                    <Crown className="w-3 h-3 text-[#111827]" />
+                    MASTER ADMIN
+                  </>
+                ) : (
+                  <>
+                    <UserCheck className="w-3 h-3 text-[#111827]" />
+                    ADMINISTRATOR
+                  </>
+                )}
               </span>
             </div>
           </div>
-          <div className="text-xs text-[#6B7280] font-medium">{session.email}</div>
+
+          <div className="flex items-center gap-2 text-xs text-[#6B7280] font-medium">
+            <span>{session.email}</span>
+          </div>
         </header>
 
 

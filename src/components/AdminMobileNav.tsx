@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { LayoutDashboard, Package, ShoppingCart, Sliders, Users, ShieldAlert, Store, FolderPlus, Menu, X, MessageSquare, UserCheck, ClipboardList } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingCart, Sliders, Users, ShieldAlert, Store, FolderPlus, Menu, X, MessageSquare, UserCheck, ClipboardList, Tag } from "lucide-react";
 
 import LogoutButton from "./LogoutButton";
 
@@ -53,6 +53,9 @@ export default function AdminMobileNav({ session }: { session: any }) {
                 </Link>
                 <Link href="/admin/reviews" onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-3 text-[#111827] rounded-lg hover:bg-[#F4F4F0]">
                   <MessageSquare className="w-4 h-4" /> Reviews Moderation
+                </Link>
+                <Link href="/admin/coupons" onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-3 text-[#111827] rounded-lg hover:bg-[#F4F4F0]">
+                  <Tag className="w-4 h-4" /> Coupons & Promotions
                 </Link>
                 <Link href="/admin/customers" onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-3 text-[#111827] rounded-lg hover:bg-[#F4F4F0]">
                   <Users className="w-4 h-4" /> Customers

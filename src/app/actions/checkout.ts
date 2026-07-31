@@ -3,10 +3,21 @@
 import { razorpay } from "@/lib/razorpay";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSession } from "@/lib/auth";
+import { validateAndCalculateCoupon } from "@/lib/coupons";
 
-export async function createRazorpayOrderAction(totalAmount: number) {
+export async function createRazorpayOrderAction(totalAmount: number, couponCode?: string) {
   try {
-    const amountInPaise = Math.round(totalAmount * 100);
+    let finalAmount = totalAmount;
+
+    // Server-side recalculation of coupon discount if a coupon code is supplied
+    if (couponCode) {
+      const validation = await validateAndCalculateCoupon(couponCode, totalAmount);
+      if (validation.valid && validation.payableAmount !== undefined) {
+        finalAmount = validation.payableAmount;
+      }
+    }
+
+    const amountInPaise = Math.round(finalAmount * 100);
 
     const order = await razorpay.orders.create({
       amount: amountInPaise,
@@ -14,7 +25,13 @@ export async function createRazorpayOrderAction(totalAmount: number) {
       receipt: `rcpt_${Date.now()}`,
     });
 
-    return { success: true, orderId: order.id, amount: order.amount, keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID };
+    return {
+      success: true,
+      orderId: order.id,
+      amount: order.amount,
+      keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+      finalAmount,
+    };
   } catch (error: any) {
     console.error("Razorpay order creation error:", error);
     return { success: false, error: error.message || "Failed to initiate Razorpay order." };
@@ -26,10 +43,30 @@ export async function completeOrderAction(data: {
   razorpayPaymentId: string;
   items: { productId: string; name: string; price: number; quantity: number; image?: string }[];
   totalAmount: number;
+  couponCode?: string;
   shippingAddress: { fullName: string; street: string; city: string; state: string; pincode: string; phone: string; email: string };
 }) {
   const session = await getCurrentSession();
   const orderNumber = "ORD-" + Math.floor(100000 + Math.random() * 900000);
+
+  // Re-verify subtotal and server-side coupon discount
+  const subtotal = data.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  let discountAmount = 0;
+  let validatedCouponCode: string | null = null;
+  let targetCouponId: string | null = null;
+
+  if (data.couponCode) {
+    const couponValidation = await validateAndCalculateCoupon(data.couponCode, subtotal, data.shippingAddress.email);
+    if (couponValidation.valid) {
+      discountAmount = couponValidation.discountAmount || 0;
+      validatedCouponCode = couponValidation.couponCode || null;
+
+      const couponObj = await prisma.coupon.findUnique({ where: { code: couponValidation.couponCode } });
+      if (couponObj) targetCouponId = couponObj.id;
+    }
+  }
+
+  const finalTotalAmount = Math.max(0, subtotal - discountAmount);
 
   try {
     const order = await prisma.order.create({
@@ -39,7 +76,9 @@ export async function completeOrderAction(data: {
         guestEmail: data.shippingAddress.email,
         guestName: data.shippingAddress.fullName,
         guestPhone: data.shippingAddress.phone,
-        totalAmount: data.totalAmount,
+        totalAmount: finalTotalAmount,
+        discountAmount,
+        couponCode: validatedCouponCode,
         status: "PAID",
         razorpayOrderId: data.razorpayOrderId,
         razorpayPaymentId: data.razorpayPaymentId,
@@ -55,6 +94,25 @@ export async function completeOrderAction(data: {
         },
       },
     });
+
+    // Record CouponUsage and increment Coupon usageCount upon successful payment
+    if (targetCouponId) {
+      await prisma.$transaction([
+        prisma.couponUsage.create({
+          data: {
+            couponId: targetCouponId,
+            userId: session?.id || null,
+            guestEmail: data.shippingAddress.email || null,
+            orderId: order.id,
+            discountAmount,
+          },
+        }),
+        prisma.coupon.update({
+          where: { id: targetCouponId },
+          data: { usageCount: { increment: 1 } },
+        }),
+      ]).catch((err) => console.error("Failed to record coupon usage transaction:", err));
+    }
 
     // Reduce stock for all ordered products atomically
     const stockUpdates = data.items

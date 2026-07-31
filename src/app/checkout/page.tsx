@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useCart } from "@/components/CartContext";
 import { createRazorpayOrderAction, completeOrderAction } from "@/app/actions/checkout";
+import { validateCouponAction } from "@/app/actions/coupons";
 import {
   getUserAddressesAction,
   createAddressAction,
@@ -42,11 +43,52 @@ export default function CheckoutPage() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Active items and total calculation based on session mode
+  // Coupon & Promo State
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    discountAmount: number;
+    payableAmount: number;
+    message: string;
+  } | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponMsg, setCouponMsg] = useState<{ success?: string; error?: string } | null>(null);
+
+  // Active items and total calculation based on session mode & applied discount
   const activeItems = isBuyNowMode && buyNowItem ? [buyNowItem] : cartItems;
-  const activeTotalAmount = isBuyNowMode && buyNowItem
+  const rawSubtotal = isBuyNowMode && buyNowItem
     ? buyNowItem.price * buyNowItem.quantity
     : cartTotalAmount;
+
+  const activeTotalAmount = appliedCoupon ? appliedCoupon.payableAmount : rawSubtotal;
+
+  const handleApplyCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    setCouponMsg(null);
+
+    const res = await validateCouponAction(couponCode, rawSubtotal, guestEmail);
+    setCouponLoading(false);
+
+    if (res.valid && res.discountAmount !== undefined && res.payableAmount !== undefined) {
+      setAppliedCoupon({
+        code: res.couponCode!,
+        discountAmount: res.discountAmount,
+        payableAmount: res.payableAmount,
+        message: res.message,
+      });
+      setCouponMsg({ success: res.message });
+    } else {
+      setCouponMsg({ error: res.message });
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setCouponMsg(null);
+  };
 
   // Parallel loading of user addresses
   const loadAddresses = useCallback(async () => {
@@ -148,7 +190,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    const orderRes = await createRazorpayOrderAction(activeTotalAmount);
+    const orderRes = await createRazorpayOrderAction(rawSubtotal, appliedCoupon?.code);
     if (!orderRes.success || !orderRes.orderId) {
       setError(orderRes.error || "Failed to initialize payment.");
       setLoading(false);
@@ -168,6 +210,7 @@ export default function CheckoutPage() {
           razorpayPaymentId: response.razorpay_payment_id,
           items: activeItems,
           totalAmount: activeTotalAmount,
+          couponCode: appliedCoupon?.code,
           shippingAddress: resolvedAddress,
         });
 
@@ -286,12 +329,6 @@ export default function CheckoutPage() {
             <h1 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-[#111827]">
               {isBuyNowMode ? "Instant Direct Checkout" : "Checkout & Shipping"}
             </h1>
-            {isBuyNowMode && (
-              <span className="px-2.5 py-0.5 rounded-full bg-[#111827] text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                <Zap className="w-3 h-3 text-amber-400" />
-                Buy Now
-              </span>
-            )}
           </div>
           <p className="text-xs text-[#6B7280] font-semibold mt-1">
             {isBuyNowMode
@@ -312,8 +349,8 @@ export default function CheckoutPage() {
       </div>
 
       {/* Summary Box of Items Being Purchased */}
-      <div className="mb-6 bg-white border border-[#E7E5E4] rounded-xl p-4 sm:p-5 shadow-xs">
-        <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#6B7280] mb-3">Order Summary</h2>
+      <div className="mb-6 bg-white border border-[#E7E5E4] rounded-xl p-4 sm:p-5 shadow-xs space-y-4">
+        <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#6B7280]">Order Summary</h2>
         <div className="space-y-3">
           {activeItems.map((item) => (
             <div key={item.productId} className="flex items-center justify-between text-xs border-b border-[#F4F4F0] pb-2 last:border-0 last:pb-0">
@@ -333,6 +370,83 @@ export default function CheckoutPage() {
               <span className="font-black text-[#111827]">₹{item.price * item.quantity}</span>
             </div>
           ))}
+        </div>
+
+        {/* Collapsible Coupon Section */}
+        <div className="pt-3 border-t border-[#E7E5E4] space-y-2">
+          {appliedCoupon ? (
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-between text-xs">
+              <div>
+                <span className="font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
+                  ✓ {appliedCoupon.code}
+                </span>
+                <p className="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                  Saved ₹{appliedCoupon.discountAmount}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleRemoveCoupon}
+                className="text-[10px] text-rose-600 hover:underline font-bold uppercase cursor-pointer"
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <details className="group text-xs">
+              <summary className="font-bold text-[#6B7280] hover:text-[#111827] cursor-pointer flex items-center justify-between list-none py-1">
+                <span>Have a promo code?</span>
+                <span className="text-[10px] uppercase font-bold text-[#111827] group-open:hidden">+ Enter Code</span>
+              </summary>
+              <form onSubmit={handleApplyCoupon} className="mt-2.5 flex gap-2">
+                <input
+                  type="text"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  placeholder="Enter Promo Code"
+                  className="flex-1 px-3 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded-lg text-xs font-mono font-bold uppercase focus:outline-none focus:border-[#111827]"
+                />
+                <button
+                  type="submit"
+                  disabled={couponLoading || !couponCode.trim()}
+                  className="px-4 py-2 bg-[#111827] hover:bg-[#27272A] text-white rounded-lg text-xs font-bold uppercase tracking-wider disabled:opacity-50 cursor-pointer"
+                >
+                  {couponLoading ? "Validating..." : "Apply"}
+                </button>
+              </form>
+            </details>
+          )}
+
+          {couponMsg && (
+            <p className={`text-[11px] font-semibold mt-1 ${couponMsg.success ? "text-emerald-700" : "text-rose-700"}`}>
+              {couponMsg.success || couponMsg.error}
+            </p>
+          )}
+        </div>
+
+        {/* Pricing Subtotal & Discount Breakdown */}
+        <div className="pt-3 border-t border-[#E7E5E4] space-y-1.5 text-xs font-semibold">
+          <div className="flex justify-between text-[#6B7280]">
+            <span>Subtotal</span>
+            <span>₹{rawSubtotal}</span>
+          </div>
+
+          {appliedCoupon && (
+            <div className="flex justify-between text-emerald-700 font-bold">
+              <span>Promo Discount ({appliedCoupon.code})</span>
+              <span>-₹{appliedCoupon.discountAmount}</span>
+            </div>
+          )}
+
+          <div className="flex justify-between text-[#6B7280]">
+            <span>Shipping</span>
+            <span className="text-emerald-700 font-bold">FREE</span>
+          </div>
+
+          <div className="flex justify-between text-sm font-black text-[#111827] pt-2 border-t border-[#E7E5E4]">
+            <span>Total Payable</span>
+            <span>₹{activeTotalAmount}</span>
+          </div>
         </div>
       </div>
 

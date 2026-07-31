@@ -114,7 +114,46 @@ async function main() {
     });
   }
 
-  console.log("Seeding with images completed successfully!");
+  // Seed Demo Coupons
+  const demoCoupons = [
+    {
+      code: "WELCOME10",
+      description: "10% OFF Welcome Discount (Max ₹500)",
+      discountType: "PERCENTAGE",
+      value: 10,
+      maxDiscountAmount: 500,
+      minOrderAmount: 0,
+      isActive: true,
+    },
+    {
+      code: "SAVE500",
+      description: "Flat ₹500 OFF on orders above ₹2,000",
+      discountType: "FIXED",
+      value: 500,
+      minOrderAmount: 2000,
+      isActive: true,
+    },
+    {
+      code: "VIP25",
+      description: "25% OFF VIP Special (Max ₹1,500)",
+      discountType: "PERCENTAGE",
+      value: 25,
+      maxDiscountAmount: 1500,
+      minOrderAmount: 1000,
+      perUserLimit: 1,
+      isActive: true,
+    },
+  ];
+
+  for (const c of demoCoupons) {
+    await prisma.coupon.upsert({
+      where: { code: c.code },
+      update: c,
+      create: c,
+    });
+  }
+
+  console.log("Seeding with images & coupons completed successfully!");
 }
 
 main()
