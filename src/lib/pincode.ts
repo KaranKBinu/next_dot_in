@@ -69,8 +69,10 @@ export async function fetchPincodeDetails(pincode: string): Promise<PincodeData 
     // Save to Cache
     setPincodeCache(cleanPin, result);
     return result;
-  } catch (err) {
-    console.error("Failed to fetch pincode details:", err);
+  } catch (err: any) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Failed to fetch pincode details:", err);
+    }
     return null;
   }
 }

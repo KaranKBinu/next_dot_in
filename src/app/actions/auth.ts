@@ -3,11 +3,14 @@
 import { prisma } from "@/lib/prisma";
 import { hashPassword, verifyPassword, setSessionCookie, clearSessionCookie } from "@/lib/auth";
 
+import { logger } from "@/lib/logger";
+
 export async function loginAction(formData: FormData) {
   const email = (formData.get("email") as string)?.toLowerCase().trim();
   const password = formData.get("password") as string;
 
   if (!email || !password) {
+    logger.warn({ operation: "LOGIN_FAILED", reason: "MISSING_FIELDS" }, "Login failed: Missing email or password");
     return { success: false, error: "Email and password required." };
   }
 
@@ -28,15 +31,18 @@ export async function loginAction(formData: FormData) {
     });
 
     await setSessionCookie(adminUser.id, adminUser.role);
+    logger.info({ operation: "LOGIN_SUCCESS", userId: adminUser.id, userRole: adminUser.role }, `Admin session established for ${adminUser.role}`);
     return { success: true, role: adminUser.role };
   }
 
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !verifyPassword(password, user.passwordHash)) {
+    logger.warn({ operation: "LOGIN_FAILED", email }, "Login failed: Invalid credentials");
     return { success: false, error: "Invalid email or password." };
   }
 
   await setSessionCookie(user.id, user.role);
+  logger.info({ operation: "LOGIN_SUCCESS", userId: user.id, userRole: user.role }, "User login successful");
   return { success: true, role: user.role };
 }
 

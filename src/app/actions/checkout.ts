@@ -4,6 +4,7 @@ import { razorpay } from "@/lib/razorpay";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSession } from "@/lib/auth";
 import { validateAndCalculateCoupon } from "@/lib/coupons";
+import { logger } from "@/lib/logger";
 
 export async function createRazorpayOrderAction(totalAmount: number, couponCode?: string) {
   try {
@@ -25,6 +26,16 @@ export async function createRazorpayOrderAction(totalAmount: number, couponCode?
       receipt: `rcpt_${Date.now()}`,
     });
 
+    logger.info(
+      {
+        operation: "PAYMENT_ORDER_CREATED",
+        razorpayOrderId: order.id,
+        amount: finalAmount,
+        couponCode,
+      },
+      "Razorpay order initialized successfully"
+    );
+
     return {
       success: true,
       orderId: order.id,
@@ -33,7 +44,14 @@ export async function createRazorpayOrderAction(totalAmount: number, couponCode?
       finalAmount,
     };
   } catch (error: any) {
-    console.error("Razorpay order creation error:", error);
+    logger.error(
+      {
+        operation: "PAYMENT_ORDER_CREATION_FAILED",
+        totalAmount,
+        error: error.message,
+      },
+      "Razorpay order creation error"
+    );
     return { success: false, error: error.message || "Failed to initiate Razorpay order." };
   }
 }
@@ -95,6 +113,19 @@ export async function completeOrderAction(data: {
       },
     });
 
+    logger.info(
+      {
+        operation: "PAYMENT_VERIFICATION_SUCCESS",
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        razorpayOrderId: data.razorpayOrderId,
+        razorpayPaymentId: data.razorpayPaymentId,
+        totalAmount: finalTotalAmount,
+        discountAmount,
+      },
+      `Order ${order.orderNumber} placed and paid successfully`
+    );
+
     // Record CouponUsage and increment Coupon usageCount upon successful payment
     if (targetCouponId) {
       await prisma.$transaction([
@@ -111,7 +142,17 @@ export async function completeOrderAction(data: {
           where: { id: targetCouponId },
           data: { usageCount: { increment: 1 } },
         }),
-      ]).catch((err) => console.error("Failed to record coupon usage transaction:", err));
+      ]).catch((err) =>
+        logger.error(
+          {
+            operation: "COUPON_USAGE_RECORD_FAILED",
+            couponId: targetCouponId,
+            orderId: order.id,
+            error: err.message,
+          },
+          "Failed to record coupon usage transaction"
+        )
+      );
     }
 
     // Reduce stock for all ordered products atomically
@@ -129,7 +170,15 @@ export async function completeOrderAction(data: {
 
     return { success: true, orderId: order.id, orderNumber: order.orderNumber };
   } catch (error: any) {
-    console.error("Order completion error:", error);
+    logger.error(
+      {
+        operation: "ORDER_COMPLETION_FAILED",
+        razorpayOrderId: data.razorpayOrderId,
+        razorpayPaymentId: data.razorpayPaymentId,
+        error: error.message,
+      },
+      "Order completion error"
+    );
     return { success: false, error: error.message };
   }
 }

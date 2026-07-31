@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { prisma } from "./prisma";
+import { logger } from "./logger";
 
 export const DEFAULT_SETTINGS: Record<string, string> = {
   wishlist_enabled: "true",
@@ -12,16 +13,24 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
 export const getSystemSettings = cache(async (): Promise<Record<string, boolean>> => {
   try {
     const settings = await prisma.systemSetting.findMany();
-    const result: Record<string, boolean> = {};
+    const map: Record<string, boolean> = Object.entries(DEFAULT_SETTINGS).reduce(
+      (acc, [key, val]) => ({ ...acc, [key]: val === "true" }),
+      {}
+    );
 
-    for (const [key, defaultValue] of Object.entries(DEFAULT_SETTINGS)) {
-      const found = settings.find((s) => s.key === key);
-      result[key] = found ? found.value === "true" : defaultValue === "true";
+    for (const s of settings) {
+      map[s.key] = s.value === "true";
     }
 
-    return result;
+    return map;
   } catch (error) {
-    console.error("Error loading system settings:", error);
+    logger.error(
+      {
+        operation: "SYSTEM_SETTINGS_LOAD_FAILED",
+        error: (error as any)?.message,
+      },
+      "Error loading system settings"
+    );
     return {
       wishlist_enabled: true,
       reviews_enabled: true,

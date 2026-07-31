@@ -1,7 +1,13 @@
 import Razorpay from "razorpay";
+import { logger } from "./logger";
 
-if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-  console.warn("Razorpay keys missing in environment variables.");
+if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+  logger.warn(
+    {
+      operation: "RAZORPAY_CONFIG_WARNING",
+    },
+    "Razorpay keys missing in environment variables."
+  );
 }
 
 export const razorpay = new Razorpay({

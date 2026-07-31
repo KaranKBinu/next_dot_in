@@ -1,5 +1,6 @@
 import { getCurrentSession, UserSession } from "./auth";
 import { prisma } from "./prisma";
+import { logger } from "./logger";
 
 export async function requireAuth(): Promise<UserSession> {
   const session = await getCurrentSession();
@@ -40,17 +41,37 @@ export async function logAuditAction(
       delete safeMetadata.token;
       delete safeMetadata.secret;
     }
-
     await prisma.auditLog.create({
       data: {
         actorId,
         action,
         entityType,
-        entityId: entityId || null,
-        metadata: safeMetadata ?? undefined,
+        entityId,
+        metadata: metadata ? JSON.parse(JSON.stringify(metadata)) : undefined,
       },
     });
+
+    logger.info(
+      {
+        operation: "AUDIT_LOG_RECORDED",
+        actorId,
+        action,
+        entityType,
+        entityId,
+      },
+      `Audit log recorded: ${action}`
+    );
   } catch (error) {
-    console.error("Audit log creation failed:", error);
+    logger.error(
+      {
+        operation: "AUDIT_LOG_CREATION_FAILED",
+        actorId,
+        action,
+        entityType,
+        entityId,
+        error: (error as any)?.message,
+      },
+      "Audit log creation failed"
+    );
   }
 }
