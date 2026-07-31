@@ -21,6 +21,9 @@ const CATEGORY_MAP: Record<string, { attributes: string[]; subcategories: string
   },
 };
 
+import { useEffect } from "react";
+import { getCategoriesAction } from "@/app/actions/product";
+
 export default function GuidedProductCreationPage() {
   const router = useRouter();
   const [creationMode, setCreationMode] = useState<"ai" | "manual">("manual");
@@ -28,15 +31,28 @@ export default function GuidedProductCreationPage() {
   const [loading, setLoading] = useState(false);
   const [aiAnalyzing, setAiAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dbCategories, setDbCategories] = useState<any[]>([]);
 
   // Photo state
   const [images, setImages] = useState<string[]>([]);
+
+  useEffect(() => {
+    async function loadCategories() {
+      const res = await getCategoriesAction();
+      if (res.success && res.categories && res.categories.length > 0) {
+        setDbCategories(res.categories);
+        setForm((prev) => ({ ...prev, categoryId: res.categories[0].id }));
+      }
+    }
+    loadCategories();
+  }, []);
 
   // Form state
   const [form, setForm] = useState({
     name: "",
     brand: "NEXT.IN",
     category: "Clothing",
+    categoryId: "",
     subcategory: "T-Shirts",
     description: "",
     price: 1499,
@@ -57,8 +73,16 @@ export default function GuidedProductCreationPage() {
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const files = Array.from(e.target.files);
-    const newImages = files.map((file) => URL.createObjectURL(file));
-    setImages((prev) => [...prev, ...newImages]);
+    
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setImages((prev) => [...prev, event.target!.result as string]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   const removePhoto = (index: number) => {
@@ -95,6 +119,8 @@ export default function GuidedProductCreationPage() {
     setLoading(true);
     setError(null);
 
+    const selectedCatId = form.categoryId || (dbCategories.length > 0 ? dbCategories[0].id : "");
+
     const res = await createProductAction({
       name: form.name,
       brand: form.brand,
@@ -103,7 +129,7 @@ export default function GuidedProductCreationPage() {
       compareAtPrice: form.compareAtPrice,
       stock: form.stock,
       lowStockThreshold: form.lowStockThreshold,
-      categoryId: form.category,
+      categoryId: selectedCatId,
       images: images.length > 0 ? images : ["/tshirt_product_sample_1785257457017.png"],
       attributes: form.attributes,
       isFeatured: form.isFeatured,
@@ -237,12 +263,12 @@ export default function GuidedProductCreationPage() {
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">Category</label>
                 <select
-                  value={form.category}
-                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                  value={form.categoryId || ""}
+                  onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
                   className="w-full mt-1 px-3 py-2 bg-[#FAFAF8] border border-[#E7E5E4] rounded text-xs text-[#111827]"
                 >
-                  {Object.keys(CATEGORY_MAP).map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
+                  {dbCategories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
                 </select>
               </div>
